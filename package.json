@@ -24,6 +24,7 @@
   "contributors": [],
   "dependencies": {
     "fs-extra": "^10.0.0",
+    "prompts": "^2.4.2",
     "svcorelib": "^1.14.2",
     "ws": "^8.2.3",
     "yargs": "^17.2.1"

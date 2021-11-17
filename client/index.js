@@ -1,9 +1,33 @@
-#!/usr/bin/env node
-
+const prompt = require("prompts");
 const { WebSocket } = require("ws");
+const { colors } = require("svcorelib");
+
+const ActionHandler = require("../common/ActionHandler");
+
+const col = colors.fg;
+const { exit } = process;
 
 
-/** @typedef {import("../common/types/actions").HandshakeAction} HandshakeAction */
+/** @typedef {import("../types/actions").TransferAction} TransferAction */
+/** @typedef {import("../types/lobby").LobbySettings} LobbySettings */
+
+
+/** @type {WebSocket} */
+let sock;
+/** @type {ActionHandler} */
+let act;
+
+
+const persistentData = {
+    /** @type {string} */
+    username: undefined,
+    /** @type {string} */
+    sessionID: undefined,
+    /** @type {string} */
+    lobbyID: undefined,
+    /** @type {LobbySettings} */
+    lobbySettings: undefined,
+};
 
 
 async function run()
@@ -12,39 +36,114 @@ async function run()
     {
         const host = "localhost";
         const port = 6942;
-        const sock = new WebSocket(`ws://${host}:${port}`);
+    
+        sock = new WebSocket(`ws://${host}:${port}`);
 
-        sock.on("open", () => {
-            console.log("\nopened connection");
+        act = new ActionHandler("client", sock);
 
-            /** @type {HandshakeAction} */
-            const hsAct = {
-                type: "handshake",
-                actor: "client",
-                data: {
-                    username: "Sv443",
-                },
-                timestamp: Date.now(),
-            };
+        act.on("response", (action) => incomingAction(action));
 
-            sock.send(JSON.stringify(hsAct));
+
+        const { username } = await prompt({
+            type: "text",
+            message: "Please enter your username for this session",
+            validate: (v) => v.length > 2,
+            name: "username",
         });
 
-        sock.on("close", (code, reason) => {
-            console.log("\nconnection closed, code:", code);
-            console.log(reason);
+
+        act.dispatch({
+            type: "handshake",
+            data: { username },
         });
 
-        sock.on("message", (data, isBin) => {
-            /** @type {Action} */
-            const parsed = JSON.parse(data.toString());
-
-            console.log("\nserver message:", parsed);
-        });
+        // so the process doesn't exit cause nothing is in the event queue
+        // setInterval(() => {}, 3600000);
     }
     catch(err)
     {
         console.error("error", err);
+    }
+}
+
+async function mainMenu()
+{
+    console.clear();
+    console.log(`Pung - Main menu\n`);
+
+    const { option } = prompt({
+        type: "select",
+        message: "Select an option",
+        choices: [
+            {
+                title: "Create a lobby",
+                value: "createLobby",
+            },
+            {
+                title: "Join a lobby",
+                value: "joinLobby",
+            },
+            {
+                title: `${col.red}Exit${col.rst}`,
+                value: "exit",
+            },
+        ],
+        name: "option",
+    });
+
+    const { username, sessionID } = persistentData;
+
+    switch(option)
+    {
+    case "createLobby":
+        act.dispatch({
+            type: "createLobby",
+            data: { username, sessionID },
+        });
+
+        break;
+    case "joinLobby":
+        act.dispatch({
+            type: "joinLobby",
+            data: {
+                // TODO:
+            },
+        });
+
+        break;
+    case "exit":
+        sock.close();
+
+        return exit(0);
+    }
+}
+
+/**
+ * Called whenever the server sends this client an action
+ * @param {TransferAction} action
+ */
+function incomingAction(action)
+{
+    const { type } = action;
+
+    switch(type)
+    {
+    case "ackHandshake":
+        persistentData.username = action.data.finalUsername;
+        persistentData.sessionID = action.data.sessionID;
+
+        mainMenu();
+        break;
+    case "ackJoinLobby":
+        persistentData.lobbyID = action.data.lobbyID;
+        persistentData.lobbySettings = action.data.initialSettings;
+        break;
+    case "broadcastLobbySettings":
+        persistentData.lobbySettings = action.data;
+        break;
+    case "broadcastGameUpdate":
+        // TODO:
+        break;
     }
 }
 
