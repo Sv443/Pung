@@ -1,0 +1,27 @@
+{
+  "name": "pung",
+  "version": "0.1.0",
+  "description": "Command line multiplayer pong game",
+  "main": "client/src/index.js",
+  "bin": "client/src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node .",
+    "start-server": "node server"
+  },
+  "keywords": [
+    "cli",
+    "cli-game",
+    "multiplayer-game"
+  ],
+  "author": {
+    "name": "Sv443",
+    "url": "https://github.com/Sv443",
+    "email": "contact@sv443.net"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "svcorelib": "^1.14.2",
+    "ws": "^8.2.3"
+  }
+}
