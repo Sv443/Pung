@@ -3,7 +3,7 @@
 const { WebSocket } = require("ws");
 
 
-/** @typedef {import("../../lib/types/actions").HandshakeAction} HandshakeAction */
+/** @typedef {import("../common/types/actions").HandshakeAction} HandshakeAction */
 
 
 async function run()
