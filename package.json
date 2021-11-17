@@ -2,6 +2,7 @@
   "name": "pung",
   "version": "0.1.0",
   "description": "Command line multiplayer pong game",
+  "license": "MIT",
   "main": "client/index.js",
   "bin": "client/index.js",
   "scripts": {
@@ -20,7 +21,7 @@
     "url": "https://github.com/Sv443",
     "email": "contact@sv443.net"
   },
-  "license": "MIT",
+  "contributors": [],
   "dependencies": {
     "fs-extra": "^10.0.0",
     "svcorelib": "^1.14.2",
