@@ -10,6 +10,8 @@ class ActionHandler extends EventEmitter {
      */
     constructor(actor)
     {
+        super();
+
         this.actor = actor;
     }
 }

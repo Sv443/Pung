@@ -22,8 +22,6 @@ async function run()
 {
     console.log(`Pung-Server v${packageJson.version}`);
 
-    let action = "initializing";
-
     try
     {
         await init();
