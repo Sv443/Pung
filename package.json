@@ -2,12 +2,12 @@
   "name": "pung",
   "version": "0.1.0",
   "description": "Command line multiplayer pong game",
-  "main": "client/src/index.js",
-  "bin": "client/src/index.js",
+  "main": "client/index.js",
+  "bin": "client/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node .",
-    "start-server": "node server"
+    "test": "exit 0 # no test specified",
+    "start": "node client/index.js",
+    "start-server": "node server/index.js"
   },
   "keywords": [
     "cli",
@@ -21,7 +21,12 @@
   },
   "license": "MIT",
   "dependencies": {
+    "fs-extra": "^10.0.0",
     "svcorelib": "^1.14.2",
-    "ws": "^8.2.3"
+    "ws": "^8.2.3",
+    "yargs": "^17.2.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.2.0"
   }
 }
