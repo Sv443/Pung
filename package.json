@@ -7,7 +7,8 @@
   "scripts": {
     "test": "exit 0 # no test specified",
     "start": "node client/index.js",
-    "start-server": "node server/index.js"
+    "start-server": "node server/index.js",
+    "lint": "eslint ."
   },
   "keywords": [
     "cli",
