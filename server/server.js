@@ -26,7 +26,7 @@ let server;
  * @param {number} port
  * @returns {Promise<void, (Error|string)>}
  */
-function init(port = cfg.defaultPort)
+function init(port = cfg.defaultServerPort)
 {
     return new Promise(async (res, rej) => {
         try

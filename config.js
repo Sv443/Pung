@@ -6,7 +6,9 @@ const cfg = {
     /** Path to the error log file (JSON) */
     errLogPath: join(__dirname, "errors.json"),
     /** Default port of the websocket connection */
-    defaultPort: 6942,
+    defaultClientPort: 6942,
+    /** I need to run the server behind a nginx reverse proxy so this is necessary */
+    defaultServerPort: 6941,
 };
 
 module.exports = Object.freeze(cfg);

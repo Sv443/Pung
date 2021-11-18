@@ -5,6 +5,8 @@ const { colors, pause } = require("svcorelib");
 const ActionHandler = require("../common/ActionHandler");
 const dbg = require("../common/dbg");
 
+const cfg = require("../config");
+
 const col = colors.fg;
 const { exit } = process;
 
@@ -38,7 +40,7 @@ async function run()
     try
     {
         const host = "localhost";
-        const port = 6942;
+        const port = cfg.defaultClientPort;
     
         sock = new WebSocket(`ws://${host}:${port}`);
 

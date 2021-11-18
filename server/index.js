@@ -26,7 +26,7 @@ async function run()
     {
         await init();
 
-        const port = args.port ?? cfg.defaultPort;
+        const port = args.port ?? cfg.defaultServerPort;
 
         await server.init(port);
 
