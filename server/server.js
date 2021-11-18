@@ -2,7 +2,7 @@ const { WebSocketServer } = require("ws");
 const { randomUUID } = require("crypto");
 
 const ActionHandler = require("../common/ActionHandler");
-const { generateLobbyID } = require("../common/lobby");
+const { generateLobbyID } = require("../common/Lobby_");
 const dbg = require("../common/dbg");
 
 const cfg = require("../config");

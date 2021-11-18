@@ -41,12 +41,18 @@ class ActionHandler extends EventEmitter {
     hookEvents()
     {
         this.sock.on("message", (chunk) => {
-            // TODO: validate message body structure
+            try
+            {
+                /** @type {TransferAction} */
+                const action = JSON.parse(chunk.toString());
 
-            /** @type {TransferAction} */
-            const action = JSON.parse(chunk.toString());
-
-            this.emit("response", action);
+                if(ActionHandler.isValidAction(action))
+                    this.emit("response", action);
+            }
+            catch(err)
+            {
+                // TODO:
+            }
         });
 
         this.sock.on("close", (code, reason) => {
@@ -67,6 +73,26 @@ class ActionHandler extends EventEmitter {
         const transferAct = { actor, type, data, timestamp: Date.now() };
 
         this.sock.send(JSON.stringify(transferAct));
+    }
+
+    /**
+     * Checks if the provided value is a valid action
+     * @static
+     * @param {any} action
+     * @returns {boolean}
+     */
+    static isValidAction(action)
+    {
+        if(typeof action !== "object")
+            return false;
+
+        if(typeof action.type !== "string")
+            return false;
+
+        if(typeof action.data !== "object" || Object.keys(action.data).length === 0)
+            return false;
+
+        return true;
     }
 }
 
