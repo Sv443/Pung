@@ -1,5 +1,5 @@
 const { WebSocketServer } = require("ws");
-const { randomUUID } = require("crypto");
+const { unused, colors } = require("svcorelib");
 
 const ActionHandler = require("../common/ActionHandler");
 const Lobby = require("../common/Lobby");
@@ -8,6 +8,8 @@ const sanitizeText = require("../common/sanitizeText");
 const { generateSessID } = require("../common/sessionID");
 
 const cfg = require("../config");
+
+const col = colors.fg;
 
 
 /** @typedef {import("http").IncomingMessage} IncomingMessage */
@@ -64,6 +66,8 @@ function init(port = cfg.defaultServerPort)
  */
 function clientConnect(sock, req)
 {
+    unused(req);
+
     const hand = new ActionHandler("server", sock);
 
     sock.on("close", (code, reason) => {
@@ -75,6 +79,10 @@ function clientConnect(sock, req)
     });
 
     hand.on("response", (action) => onClientAction(action, hand));
+
+    hand.on("error", (err) => {
+        console.log(`${col.red}Error in ActionHandler:${col.rst}\n${err.stack}`);
+    });
 }
 
 /**
@@ -107,16 +115,19 @@ function onClientAction(action, hand)
         {
             const { data } = action;
 
+            const { username, sessionID } = data;
+
             // TODO:
 
             const lobbyID = Lobby.generateLobbyID();
 
-            const lobby = createLobby(lobbyID, data.username, data.sessionID);
+            const lobby = createLobby(lobbyID, username, sessionID);
             lobbies.push(lobby);
 
             hand.dispatch({
                 type: "ackJoinLobby",
                 data: {
+                    isAdmin: lobby.isAdmin(sessionID),
                     lobbyID: lobby.lobbyID,
                     initialSettings: lobby.settings,
                 },
@@ -127,6 +138,8 @@ function onClientAction(action, hand)
     case "joinLobby":
         {
             const { data } = action;
+
+            unused(data);
 
             // TODO:
             // const { lobbyID, initialSettings } = lookupLobby(data.lobbyID);
@@ -146,11 +159,13 @@ function onClientAction(action, hand)
             // isLobbyHost(data.sessionID);
             // validateLobbySettings(data.settings);
 
-            const newSettings = data.settings;
+            const lobby = lobbies.find(lobby => lobby.isAdmin(data.sessionID));
+
+            lobby.settings = data.settings;
 
             hand.dispatch({
-                type: "broadcastLobbySettings",
-                data: newSettings,
+                type: "broadcastLobbyUpdate",
+                data,
             });
 
             break;

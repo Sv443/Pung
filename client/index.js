@@ -1,6 +1,6 @@
 const prompt = require("prompts");
 const { WebSocket } = require("ws");
-const { colors } = require("svcorelib");
+const { colors, isEmpty } = require("svcorelib");
 const dotenv = require("dotenv");
 
 const ActionHandler = require("../common/ActionHandler");
@@ -31,6 +31,8 @@ const persistentData = {
     lobbyID: undefined,
     /** @type {LobbySettings} */
     lobbySettings: undefined,
+    /** @type {boolean} */
+    isLobbyAdmin: false,
 };
 
 dotenv.config();
@@ -54,6 +56,11 @@ async function run()
 
         act.on("response", (action) => incomingAction(action));
 
+        act.on("error", (err) => {
+            console.log(`${col.red}Error in ActionHandler:${col.rst}\n${err.stack}`);
+        });
+
+        clearConsole();
 
         const { username } = await prompt({
             type: "text",
@@ -81,6 +88,9 @@ async function run()
 
 async function mainMenu()
 {
+    if(sock.readyState === 3)
+        return run();
+
     const { username, sessionID } = persistentData;
 
     clearConsole();
@@ -135,31 +145,237 @@ async function mainMenu()
     }
 }
 
+function resetLobbyData()
+{
+    persistentData.lobbyID = undefined;
+    persistentData.lobbySettings = undefined;
+    persistentData.isLobbyAdmin = false;
+}
+
 /**
  * Displays the lobby
  */
 async function displayLobby()
 {
+    if(sock.readyState === 3)
+    {
+        resetLobbyData();
+        return mainMenu();
+    }
+
     // TODO:
     // if(both_players_ready)
     //     return playGame();
 
+    const truncUser = (username, maxSpace) => {
+        const spacesAmt = username.length - 10;
+
+        let spaces = "";
+        for(let i = 0; i < spacesAmt; i++)
+            spaces += " ";
+
+        return `${username}${spaces}`;
+    };
+
     const lines = [
-        `${col.blue}Pung - Lobby${col.rst}`,
-        ``,
-        `Join Code:     ${persistentData.lobbyID}`,
         `#DEBUG SessID: ${persistentData.sessionID}`,
         ``,
-        `Player 1:  ${col.green}${persistentData.username}${col.rst}`,
-        `Player 2:  ${col.yellow}TODO${col.rst}`,
+        `┌──────────────┬────────────────────┐`,
+        `│    ${col.blue}Pung - Lobby${col.rst}    │    Join Code: ${col.green}${persistentData.lobbyID.substr(0, 3)} ${persistentData.lobbyID.substr(3, 3)}${col.rst}    │`,
+        `├──────────────┴────────────────────┘`,
+        `│ You: ${col.green}${truncUser(persistentData.username, 16)}${col.rst} ${persistentData.isLobbyAdmin ? `${col.cyan} ♦${col.rst}` : "  "} │ ${col.yellow}${truncUser(persistentData.username, 21)}${col.rst} ${persistentData.isLobbyAdmin ? "  " : `${col.cyan} ♦${col.rst}`} │`,
+        ``,
+        ``,
+        `Settings:`,
+        `   • Score to win: ${persistentData.lobbySettings.winScore}`,
+        `   • Difficulty:   ${persistentData.lobbySettings.difficulty}`,
+        ``,
+        `You:      ${col.green}${persistentData.username}${col.rst}${persistentData.isLobbyAdmin ? ` ${col.cyan}(Admin)${col.rst}` : ""}`,
+        `Opponent: ${col.yellow}TODO${col.rst}`,
         ``,
     ];
 
+
+    let keyEvent;
+
+    const getKey = (text) => new Promise(async (res, rej) => {
+        if(typeof text === "string")
+            text = isEmpty(text) ? null : `${text.trimRight()} `;
+
+        try
+        {
+            const onKey = (ch, key) => {
+                if(key && key.ctrl && ["c", "d"].includes(key.name))
+                    process.exit(0);
+
+                process.stdin.pause();
+                process.stdin.removeListener("keypress", onKey);
+
+                process.stdin.setRawMode(false);
+
+                text && process.stdout.write("\n");
+
+                return res({
+                    name: key.name || ch || "",
+                    ctrl: key.ctrl || false,
+                    meta: key.meta || false,
+                    shift: key.shift || false,
+                    sequence: key.sequence || undefined,
+                    code: key.code || undefined,
+                });
+            };
+
+            keyEvent = onKey;
+            
+            process.stdin.setRawMode(true);
+            process.stdin.on("keypress", onKey);
+
+            text && process.stdout.write(text);
+        
+            process.stdin.resume();
+        }
+        catch(err)
+        {
+            return rej(new Error(`Error while getting key: ${err}`));
+        }
+    });
+
+    const timeout = setTimeout(() => {
+        keyEvent && process.stdin.removeListener("keypress", keyEvent);
+
+        return displayLobby();
+    }, 1000);
+
+
+    // TODO:
+    const isAdmin = true;
+
+    lines.push(`${col.blue}Choose what to do:${col.rst} ${isAdmin ? `${col.yellow}[E]${col.rst}dit lobby settings • ` : ""}E${col.red}[x]${col.rst}it lobby `);
+
+
     clearConsole();
 
-    process.stdout.write(`${lines.join("\n")}\n`);
+    process.stdout.write(`${lines.join("\n")}`);
 
-    setTimeout(displayLobby, 3000);
+
+    const key = await getKey();
+
+    let validKey = true;
+
+    switch(key.name)
+    {
+    case "e": // Edit settings
+        process.stdout.write("\n");
+        editLobbySettings();
+        break;
+    case "x": // Exit lobby
+        process.stdout.write("\n");
+        leaveLobby();
+        break;
+    default:
+        validKey = false;
+        break;
+    }
+
+    if(validKey)
+        clearTimeout(timeout);
+}
+
+/**
+ * Prompts to edit the lobby settings
+ */
+async function editLobbySettings()
+{
+    const settings = persistentData.lobbySettings;
+
+    const choices = [
+        {
+            title: `Score to win (${settings.winScore})`,
+            value: "score",
+        },
+        {
+            title: `Difficulty (${settings.difficulty})`,
+            value: "difficulty",
+        },
+    ];
+
+    const { editSetting } = await prompt({
+        message: "Edit setting",
+        type: "select",
+        name: "editSetting",
+        hint: "- Use arrow-keys. Return to select. Esc or Ctrl+C to submit.",
+        choices,
+    });
+
+    switch(editSetting)
+    {
+    case "score":
+        settings.winScore = (await prompt({
+            type: "number",
+            name: "winScore",
+            message: "Enter a new score required to win a round (1-20)",
+            limit: 20,
+            validate: n => n > 0 && n <= 20,
+            initial: settings.winScore,
+        })).winScore;
+        break;
+    case "difficulty":
+    {
+        const diffChoices = [
+            {
+                title: "Easy",
+                value: "easy",
+            },
+            {
+                title: "Medium",
+                value: "medium",
+            },
+            {
+                title: "Hard",
+                value: "hard",
+            },
+        ];
+
+        settings.difficulty = (await prompt({
+            type: "select",
+            name: "difficulty",
+            message: "Select the game's difficulty",
+            choices: diffChoices,
+        })).difficulty;
+        break;
+    }
+    }
+
+    act.dispatch({
+        type: "changeLobbySettings",
+        data: {
+            sessionID: persistentData.sessionID,
+            settings
+        },
+    });
+
+    return displayLobby();
+}
+
+/**
+ * Prompts to leave the lobby
+ */
+async function leaveLobby()
+{
+    const { confirm } = await prompt({
+        type: "confirm",
+        message: "Are you sure you want to leave the lobby?",
+        initial: false,
+    });
+
+    if(confirm)
+    {
+        resetLobbyData();
+
+        return mainMenu();
+    }
+    else
+        return displayLobby();
 }
 
 /**
@@ -188,23 +404,45 @@ function incomingAction(action)
     switch(type)
     {
     case "ackHandshake":
-        persistentData.username = action.data.finalUsername;
-        persistentData.sessionID = action.data.sessionID;
+    {
+        /** @type {TransferAction} */
+        const { data } = action;
+
+        persistentData.username = data.finalUsername;
+        persistentData.sessionID = data.sessionID;
 
         mainMenu();
         break;
+    }
     case "ackJoinLobby":
-        persistentData.lobbyID = action.data.lobbyID;
-        persistentData.lobbySettings = action.data.initialSettings;
+    {
+        /** @type {TransferAction} */
+        const { data } = action;
+
+        persistentData.lobbyID = data.lobbyID;
+        persistentData.lobbySettings = data.initialSettings;
+        persistentData.isLobbyAdmin = data.isAdmin;
 
         displayLobby();
         break;
-    case "broadcastLobbySettings":
-        persistentData.lobbySettings = action.data;
+    }
+    case "BroadcastLobbyUpdate":
+    {
+        /** @type {TransferAction} */
+        const { data } = action;
+
+        persistentData.lobbySettings = data.settings;
+        persistentData.lobbyPlayers = data.players;
         break;
+    }
     case "broadcastGameUpdate":
+    {
+        /** @type {TransferAction} */
+        const { data } = action;
+
         // TODO:
         break;
+    }
     default:
 
         break;

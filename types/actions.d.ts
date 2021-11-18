@@ -1,4 +1,4 @@
-import { LobbySettings } from "./lobby";
+import { LobbySettings, LobbyUser } from "./lobby";
 
 
 //#MARKER dependent types
@@ -11,13 +11,15 @@ import { LobbySettings } from "./lobby";
  * | :-- | :-- |
  * | normal | client -> server |
  * | `ack` | server -> client |
+ * | `broadcast` | server -> client |
  */
 export type ActionType =
     // connection
     "handshake" | "ackHandshake" |
     // lobby
     "createLobby" | "joinLobby" | "ackJoinLobby" |
-    "changeLobbySettings" | "broadcastLobbySettings" |
+    "changeLobbySettings" | "broadcastLobbyUpdate" |
+    "deleteLobby" | "ackRemovedFromLobby" |
     // ingame
     "broadcastGameUpdate"
 ;
@@ -84,6 +86,7 @@ declare interface JoinLobby extends ActionBase {
 declare interface AckJoinLobby extends ActionBase {
     type: "ackJoinLobby";
     data: {
+        isAdmin: boolean;
         lobbyID: string;
         initialSettings: LobbySettings;
     }
@@ -100,11 +103,32 @@ declare interface ChangeLobbySettings extends ActionBase {
     };
 }
 
-/** Sent from server to all clients after lobby settings have been changed, so the clients can cache and display the new settings */
-declare interface BroadcastLobbySettings extends ActionBase {
-    type: "broadcastLobbySettings";
-    /** The new lobby settings to be cached by each client */
-    data: LobbySettings;
+/** Sent from server to all clients after lobby settings have been changed or user(s) have joined or left */
+declare interface BroadcastLobbyUpdate extends ActionBase {
+    type: "broadcastLobbyUpdate";
+    data: {
+        settings: LobbySettings;
+        players: LobbyUser[];
+    }
+}
+
+/** Sent from admin client to server to request lobby deletion */
+declare interface DeleteLobby extends ActionBase {
+    type: "deleteLobby";
+    data: {
+        /** ID of the lobby to delete */
+        lobbyID: string;
+        /** Session ID of a lobby admin */
+        sessionID: string;
+    }
+}
+
+/** Sent from server to client to inform about removal from lobby */
+declare interface AckRemovedFromLobby extends ActionBase {
+    type: "ackRemovedFromLobby";
+    data: {
+        reason: "adminLeft";
+    }
 }
 
 //#SECTION ingame
@@ -147,7 +171,8 @@ export type Action =
     Handshake | AckHandshake |
     // lobby
     CreateLobby | JoinLobby | AckJoinLobby |
-    ChangeLobbySettings | BroadcastLobbySettings |
+    ChangeLobbySettings | BroadcastLobbyUpdate |
+    DeleteLobby | AckRemovedFromLobby |
     // ingame
     GameUpdate
 ;

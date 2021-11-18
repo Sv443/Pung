@@ -17,7 +17,7 @@ function generateSessID()
  */
 function isValidSessID(sessID)
 {
-    return (typeof sessID === "string" && sessID.match(/^(\d|[a-fA-F]){8}-(\d|[a-fA-F]){4}-(\d|[a-fA-F]){4}-(\d|[a-fA-F]){4}-(\d|[a-fA-F]){12}$/));
+    return (typeof sessID === "string" && sessID.match(/\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b/i));
 }
 
 module.exports = { generateSessID, isValidSessID };
