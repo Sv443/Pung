@@ -1,6 +1,7 @@
 const { join } = require("path");
 
 const cfg = {
+    debugEnabled: true,
     errLogPath: join(__dirname, "errors.json"),
     defaultPort: 6942,
 };

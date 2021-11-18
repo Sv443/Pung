@@ -5,7 +5,7 @@ const { writeFile, readFile } = require("fs-extra");
 const yargs = require("yargs");
 
 const packageJson = require("../package.json");
-const cfg = require("./config");
+const cfg = require("../config");
 
 const server = require("./server");
 
@@ -20,15 +20,17 @@ const args = prepareCLI();
 
 async function run()
 {
-    console.log(`Pung-Server v${packageJson.version}`);
+    console.log(`\nPung-Server v${packageJson.version}\n`);
 
     try
     {
         await init();
 
-        await server.init(args);
+        const port = args.port ?? cfg.defaultPort;
 
-        console.log(`Ready.`);
+        await server.init(port);
+
+        console.log(`\n${col.green}Ready on port ${port}${col.rst}\n`);
     }
     catch(err)
     {

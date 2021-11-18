@@ -1,33 +1,46 @@
 const { WebSocketServer } = require("ws");
 const { randomUUID } = require("crypto");
 
-const cfg = require("./config");
+const ActionHandler = require("../common/ActionHandler");
+const { generateLobbyID } = require("../common/lobby");
+const dbg = require("../common/dbg");
+
+const cfg = require("../config");
 
 
 /** @typedef {import("http").IncomingMessage} IncomingMessage */
 /** @typedef {import("ws").WebSocket} WebSocket */
 
-/** @typedef {import("../../lib/types/actions").Action} Action */
+/** @typedef {import("../types/actions").Action} Action */
+/** @typedef {import("../types/actions").ActionType} ActionType */
+/** @typedef {import("../types/actions").TransferAction} TransferAction */
+/** @typedef {import("../types/lobby").LobbySettings} LobbySettings */
 
 
 /** @type {WebSocketServer} */
 let server;
 
+
 /**
  * Initializes the websocket server
- * @param {import("yargs").Argv<*>} args
+ * @param {number} port
  * @returns {Promise<void, (Error|string)>}
  */
-function init(args)
+function init(port = cfg.defaultPort)
 {
     return new Promise(async (res, rej) => {
         try
         {
-            server = new WebSocketServer({
-                port: args.port ?? cfg.defaultPort,
-            });
+            port = parseInt(port);
+
+            if(isNaN(port) || port < 1)
+                throw new TypeError(`Can't create websocket server with port '${port}'`);
+
+            server = new WebSocketServer({ port });
 
             server.on("connection", clientConnect);
+            server.on("close", connectionClose);
+            server.on("error", connectionError);
 
             return res();
         }
@@ -45,37 +58,126 @@ function init(args)
  */
 function clientConnect(sock, req)
 {
-    console.log(`Client connected`);
-    console.log("\nsock", sock);
-    console.log("\nreq", req);
-
-    sock.on("message", (data, isBin) => {
-        /** @type {Action} */
-        const parsed = JSON.parse(data.toString());
-
-        if(parsed.type === "handshake")
-        {
-            /** @type {Action} */
-            const ackHs = {
-                type: "ackHandshake",
-                actor: "server",
-                data: {
-                    finalUsername: parsed.data.username,
-                    sessionID: randomUUID(),
-                },
-                timestamp: Date.now(),
-            };
-
-            sock.send(JSON.stringify(ackHs));
-        }
-
-        console.log("\n\n\nclient message:", parsed);
-    });
+    const hand = new ActionHandler("server", sock);
 
     sock.on("close", (code, reason) => {
-        console.log("\n\n\nconnection closed, code:", code);
+        console.log("\n\nconnection closed, code:", code);
         console.log(reason);
+
+        // TODO:
+        // act.clear();
     });
+
+    hand.on("response", (action) => onClientAction(action, hand));
+}
+
+/**
+ * TODO: implement correctly
+ * @param {string} username
+ */
+const sanitizeUsername = (username) => username;
+
+/**
+ * Executed when an action was received by the server from a client
+ * @param {TransferAction} action
+ * @param {ActionHandler} hand
+ */
+function onClientAction(action, hand)
+{
+    const { type } = action;
+
+    dbg("ClientAction", `Received action of type ${type}`, "server");
+
+    switch(type)
+    {
+    case "handshake":
+        {
+            const { data } = action;
+            const finalUsername = sanitizeUsername(data.username);
+
+            const sessionID = randomUUID({ disableEntropyCache: true });
+
+            hand.dispatch({
+                type: "ackHandshake",
+                data: { finalUsername, sessionID },
+            });
+            break;
+        }
+    case "createLobby":
+        {
+            const { data } = action;
+
+            // TODO:
+            
+            const lobbyID = generateLobbyID();
+
+            // registerLobby(lobbyID, data.username, data.sessionID);
+
+            /** @type {LobbySettings} */
+            const initialSettings = {
+                winScore: 5,
+                difficulty: "medium",
+            };
+
+            hand.dispatch({
+                type: "ackJoinLobby",
+                data: { lobbyID, initialSettings },
+            });
+
+            break;
+        }
+    case "joinLobby":
+        {
+            const { data } = action;
+
+            // TODO:
+            // const { lobbyID, initialSettings } = lookupLobby(data.lobbyID);
+
+            // hand.dispatch({
+            //     type: "ackJoinLobby",
+            //     data: { lobbyID, initialSettings },
+            // });
+
+            break;
+        }
+    case "changeLobbySettings":
+        {
+            const { data } = action;
+
+            // TODO:
+            // isLobbyHost(data.sessionID);
+            // validateLobbySettings(data.settings);
+
+            const newSettings = data.settings;
+
+            hand.dispatch({
+                type: "broadcastLobbySettings",
+                data: newSettings,
+            });
+
+            break;
+        }
+    default:
+        respondError();
+        break;
+    }
+}
+
+function connectionClose(...a)
+{
+    console.log("------ CLOSE", a);
+    // TODO:
+}
+
+function connectionError(...a)
+{
+    console.log("------ ERR", a);
+    // TODO:
+}
+
+function respondError()
+{
+    // TODO:
 }
 
 /**

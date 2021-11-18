@@ -4,7 +4,14 @@ import { LobbySettings } from "./lobby";
 //#MARKER dependent types
 
 
-/** The action type indicates the format of the data sent between client and server */
+/**
+ * The action type indicates the format of the data sent between client and server  
+ *   
+ * | Type | Actor |
+ * | :-- | :-- |
+ * | normal | client -> server |
+ * | `ack` | server -> client |
+ */
 export type ActionType =
     // connection
     "handshake" | "ackHandshake" |
@@ -69,6 +76,7 @@ declare interface JoinLobby extends ActionBase {
     type: "joinLobby";
     data: {
         // TODO:
+        lobbyID: string;
     };
 }
 
