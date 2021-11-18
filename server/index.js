@@ -116,7 +116,6 @@ function prepareCLI()
             desc: "Overrides the websocket port",
             alias: "p",
             type: "number",
-            default: 6942,
         }
     });
 
