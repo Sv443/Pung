@@ -11,6 +11,7 @@ export interface LobbySettings {
 
 /** A user in a lobby */
 export interface LobbyUser {
+    username: string;
     sessionID: string;
     isAdmin: boolean;
 }

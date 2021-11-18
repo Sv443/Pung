@@ -5,6 +5,7 @@ const ActionHandler = require("../common/ActionHandler");
 const Lobby = require("../common/Lobby");
 const dbg = require("../common/dbg");
 const sanitizeText = require("../common/sanitizeText");
+const { generateSessID } = require("../common/sessionID");
 
 const cfg = require("../config");
 
@@ -16,10 +17,14 @@ const cfg = require("../config");
 /** @typedef {import("../types/actions").ActionType} ActionType */
 /** @typedef {import("../types/actions").TransferAction} TransferAction */
 /** @typedef {import("../types/lobby").LobbySettings} LobbySettings */
+/** @typedef {import("../types/lobby").LobbyUser} LobbyUser */
 
 
 /** @type {WebSocketServer} */
 let server;
+
+/** @type {Lobby[]} */
+let lobbies = [];
 
 
 /**
@@ -90,7 +95,7 @@ function onClientAction(action, hand)
             const { data } = action;
             const finalUsername = sanitizeText(data.username);
 
-            const sessionID = randomUUID({ disableEntropyCache: true });
+            const sessionID = generateSessID();
 
             hand.dispatch({
                 type: "ackHandshake",
@@ -106,13 +111,15 @@ function onClientAction(action, hand)
 
             const lobbyID = Lobby.generateLobbyID();
 
-            // registerLobby(lobbyID, data.username, data.sessionID);
-
-            const initialSettings = Lobby.getDefaultSettings();
+            const lobby = createLobby(lobbyID, data.username, data.sessionID);
+            lobbies.push(lobby);
 
             hand.dispatch({
                 type: "ackJoinLobby",
-                data: { lobbyID, initialSettings },
+                data: {
+                    lobbyID: lobby.lobbyID,
+                    initialSettings: lobby.settings,
+                },
             });
 
             break;
@@ -170,6 +177,27 @@ function respondError()
 {
     console.log();
     // TODO:
+}
+
+/**
+ * Creates a Lobby instance
+ * @param {string} lobbyID 6-digit code of the lobby
+ * @param {string} adminUsername Username of the lobby admin
+ * @param {string} adminSesID Session ID of the lobby admin
+ */
+function createLobby(lobbyID, adminUsername, adminSesID)
+{
+    if(!Lobby.isValidLobbyID(lobbyID))
+        throw new TypeError(`LobbyID is invalid`);
+
+    /** @type {LobbyUser} */
+    const adminUser = {
+        username: adminUsername,
+        sessionID: adminSesID,
+        isAdmin: true,
+    };
+
+    return new Lobby(lobbyID, adminUser);
 }
 
 /**

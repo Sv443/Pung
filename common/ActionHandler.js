@@ -27,6 +27,14 @@ class ActionHandler extends EventEmitter {
         /** @type {WebSocket} */
         this.sock = sock;
 
+        /** @type {number} When the last action was dispatched */
+        this.lastDispatch = -1;
+        /** @type {number} When the last action was received */
+        this.lastReceive = -1;
+
+        // TODO: on interval, check lastDispatch, if > some amount of time, send a heartbeat request to the server
+        // TODO: implement heartbeat system into server, to automatically clean up expired sessions
+
         this.hookEvents();
     }
 
@@ -47,16 +55,23 @@ class ActionHandler extends EventEmitter {
                 const action = JSON.parse(chunk.toString());
 
                 if(ActionHandler.isValidAction(action))
+                {
+                    this.lastReceive = Date.now();
                     this.emit("response", action);
+                }
             }
             catch(err)
             {
-                // TODO:
+                this.emit("error", err);
             }
         });
 
         this.sock.on("close", (code, reason) => {
             this.emit("close", code, reason);
+        });
+
+        this.sock.on("error", (sock, err) => {
+            this.emit("error", err);
         });
     }
 
@@ -66,13 +81,33 @@ class ActionHandler extends EventEmitter {
      */
     dispatch(action)
     {
-        const { actor } = this;
-        const { type, data } = action;
+        try
+        {
+            if(typeof action !== "object")
+                throw new TypeError(`Action is not an object`);
 
-        /** @type {TransferAction} */
-        const transferAct = { actor, type, data, timestamp: Date.now() };
+            const { actor } = this;
+            const { type, data } = action;
 
-        this.sock.send(JSON.stringify(transferAct));
+            if(typeof type !== "string")
+                throw new TypeError(`Action type is invalid`);
+
+            if(typeof data !== "object")
+                throw new TypeError(`Action data is not a valid object`);
+
+            const timestamp = Date.now();
+
+            /** @type {TransferAction} */
+            const transferAct = { actor, type, data, timestamp };
+
+            this.lastDispatch = timestamp;
+
+            this.sock.send(JSON.stringify(transferAct));
+        }
+        catch(err)
+        {
+            this.emit("error", err);
+        }
     }
 
     /**

@@ -43,10 +43,10 @@ async function run()
     try
     {
         /** #DEBUG */
-        const useVPS = true;
+        const useVPS = false;
 
         const host = useVPS ? process.env.SERVER_HOSTNAME : "localhost";
-        const port = cfg.defaultClientPort;
+        const port = useVPS ? cfg.defaultClientPort : cfg.defaultServerPort;
     
         sock = new WebSocket(`ws://${host}:${port}`);
 

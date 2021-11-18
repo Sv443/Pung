@@ -1,7 +1,8 @@
 const { mapRange } = require("svcorelib");
 const { randomBytes } = require("crypto");
 
-const sanitizeText = require("./sanitizeText");
+const { needsSanit } = require("./sanitizeText");
+const { isValidSessID } = require("./sessionID");
 
 
 /** @typedef {import("../types/lobby").LobbySettings} LobbySettings */
@@ -11,36 +12,57 @@ const sanitizeText = require("./sanitizeText");
 class Lobby {
     /**
      * Contains info about a lobby
+     * @param {string} lobbyID
+     * @param {LobbyUser} lobbyAdmin
      * @param {LobbySettings} [settings]
      */
-    constructor(settings)
+    constructor(lobbyID, lobbyAdmin, settings)
     {
         if(typeof settings !== "object")
             settings = {};
+
+        if(!Lobby.isValidLobbyID(lobbyID))
+            throw new TypeError(`Invalid lobby ID`);
 
         const defaultSettings = Lobby.getDefaultSettings();
 
         /** @type {LobbySettings} */
         this.settings = { ...defaultSettings, ...settings };
 
+        this.lobbyID = lobbyID;
+
         /** @type {LobbyUser[]} */
-        this.users = [];
+        this.users = [ lobbyAdmin ];
     }
 
     /**
      * Adds a user to the lobby
+     * @param {string} username
      * @param {string} sessionID
      * @param {boolean} [isAdmin=false]
      */
-    addUser(sessionID, isAdmin = false)
+    addUser(username, sessionID, isAdmin = false)
     {
-        if(typeof sessionID !== "string" || sessionID.length < 1)
-            throw new TypeError(`Can't add user with sessionID '${sessionID}'`);
+        if(typeof username !== "string" || username.length < 3)
+            throw new TypeError(`Can't add user with username '${username}', it is too short or of the wrong type`);
+
+        if(!isValidSessID(sessionID))
+            throw new TypeError(`Can't add user with sessionID '${sessionID}' as it is invalid`);
 
         if(typeof isAdmin !== "boolean")
             isAdmin = false;
 
-        this.users.push({ sessionID, isAdmin });
+        this.users.push({ username, sessionID, isAdmin });
+    }
+
+    /**
+     * Checks if a sessionID is an admin in this lobby
+     * @param {string} sessionID
+     * @returns {boolean}
+     */
+    isAdmin(sessionID)
+    {
+        return this.users.find(usr => usr.isAdmin && usr.sessionID === sessionID) ? true : false;
     }
 
     /**
@@ -63,7 +85,13 @@ class Lobby {
             idChars.push(chars[charIdx]);
         }
 
-        return sanitizeText(idChars.join(""));
+        const finalCode = idChars.join("");
+
+        // lobby code contains slurs, recursively regenerate a new one until it doesn't
+        if(needsSanit(finalCode))
+            return Lobby.generateLobbyID();
+
+        return finalCode;
     }
 
     /**
@@ -76,6 +104,16 @@ class Lobby {
             winScore: 8,
             difficulty: "medium",
         };
+    }
+
+    /**
+     * Checks if a value is a valid lobby ID
+     * @param {any} lobbyID
+     * @returns {boolean}
+     */
+    static isValidLobbyID(lobbyID)
+    {
+        return (typeof lobbyID === "string" && lobbyID.match(/^\w{6}$/));
     }
 }
 

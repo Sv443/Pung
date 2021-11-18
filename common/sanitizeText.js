@@ -13,13 +13,33 @@ function sanitizeText(text, replacement)
         throw new TypeError(`Can't sanitize value of type ${typeof text}, expected string instead`);
 
     if(typeof replacement !== "string")
-        replacement = "-";
+        replacement = "***";
 
     words.forEach(word => {
-        text = text.replace(new RegExp(`/${word}/`, "gi"), replacement);
+        const badWord = new RegExp(word.toLowerCase(), "gi");
+        if(text.match(badWord))
+            text = text.replace(badWord, replacement);
     });
 
     return text;
 }
 
+/**
+ * Checks if some text needs sanitization
+ * @param {string} text
+ * @returns {boolean}
+ */
+function needsSanit(text)
+{
+    let needsSanit = false;
+
+    words.forEach(word => {
+        if(text.match(new RegExp(word.toLowerCase(), "gi")))
+            needsSanit = true;
+    });
+
+    return needsSanit;
+}
+
 module.exports = sanitizeText;
+module.exports.needsSanit = needsSanit;
