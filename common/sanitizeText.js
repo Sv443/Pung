@@ -9,11 +9,14 @@ const { words } = require("./data/filter.json");
  */
 function sanitizeText(text, replacement)
 {
+    if(typeof text !== "string")
+        throw new TypeError(`Can't sanitize value of type ${typeof text}, expected string instead`);
+
     if(typeof replacement !== "string")
         replacement = "-";
 
     words.forEach(word => {
-        text = text.replace(new RegExp(`/${word}/`, "g"), replacement);
+        text = text.replace(new RegExp(`/${word}/`, "gi"), replacement);
     });
 
     return text;
