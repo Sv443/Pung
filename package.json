@@ -23,6 +23,7 @@
   },
   "contributors": [],
   "dependencies": {
+    "dotenv": "^10.0.0",
     "fs-extra": "^10.0.0",
     "prompts": "^2.4.2",
     "svcorelib": "^1.14.2",

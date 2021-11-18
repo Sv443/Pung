@@ -1,6 +1,8 @@
 const { mapRange } = require("svcorelib");
 const { randomBytes } = require("crypto");
 
+const sanitizeText = require("./sanitizeText");
+
 
 /** @typedef {import("../types/lobby").LobbySettings} LobbySettings */
 /** @typedef {import("../types/lobby").LobbyUser} LobbyUser */
@@ -61,7 +63,7 @@ class Lobby {
             idChars.push(chars[charIdx]);
         }
 
-        return idChars.join("");
+        return sanitizeText(idChars.join(""));
     }
 
     /**

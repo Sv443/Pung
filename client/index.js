@@ -1,6 +1,7 @@
 const prompt = require("prompts");
 const { WebSocket } = require("ws");
-const { colors, pause } = require("svcorelib");
+const { colors } = require("svcorelib");
+const dotenv = require("dotenv");
 
 const ActionHandler = require("../common/ActionHandler");
 const dbg = require("../common/dbg");
@@ -32,6 +33,8 @@ const persistentData = {
     lobbySettings: undefined,
 };
 
+dotenv.config();
+
 
 //#MARKER entrypoint
 
@@ -39,7 +42,10 @@ async function run()
 {
     try
     {
-        const host = "localhost";
+        /** #DEBUG */
+        const useVPS = true;
+
+        const host = useVPS ? process.env.SERVER_HOSTNAME : "localhost";
         const port = cfg.defaultClientPort;
     
         sock = new WebSocket(`ws://${host}:${port}`);
@@ -75,8 +81,14 @@ async function run()
 
 async function mainMenu()
 {
-    console.clear();
-    console.log(`Pung - Main menu\n`);
+    const { username, sessionID } = persistentData;
+
+    clearConsole();
+    console.log(`${col.blue}Pung - Main menu${col.rst}\n`);
+
+    console.log("#DEBUG");
+    console.log(`Username:  ${username}`);
+    console.log(`SessionID: ${sessionID}\n\n`);
 
     const { option } = await prompt({
         type: "select",
@@ -97,8 +109,6 @@ async function mainMenu()
         ],
         name: "option",
     });
-
-    const { username, sessionID } = persistentData;
 
     switch(option)
     {
@@ -136,16 +146,31 @@ async function displayLobby()
 
     const lines = [
         `${col.blue}Pung - Lobby${col.rst}`,
-        `Join Code: ${persistentData.lobbyID}`,
         ``,
-        `Player 1:  ${persistentData.username}`,
-        `Player 2:  TODO:`,
+        `Join Code:     ${persistentData.lobbyID}`,
+        `#DEBUG SessID: ${persistentData.sessionID}`,
+        ``,
+        `Player 1:  ${col.green}${persistentData.username}${col.rst}`,
+        `Player 2:  ${col.yellow}TODO${col.rst}`,
         ``,
     ];
+
+    clearConsole();
 
     process.stdout.write(`${lines.join("\n")}\n`);
 
     setTimeout(displayLobby, 3000);
+}
+
+/**
+ * Clears the console
+ */
+function clearConsole()
+{
+    if(!cfg.debugEnabled)
+        console.clear();
+    else
+        console.log("\n\n\n");
 }
 
 //#MARKER server communication

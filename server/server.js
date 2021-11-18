@@ -4,6 +4,7 @@ const { randomUUID } = require("crypto");
 const ActionHandler = require("../common/ActionHandler");
 const Lobby = require("../common/Lobby");
 const dbg = require("../common/dbg");
+const sanitizeText = require("../common/sanitizeText");
 
 const cfg = require("../config");
 
@@ -72,12 +73,6 @@ function clientConnect(sock, req)
 }
 
 /**
- * TODO: implement correctly
- * @param {string} username
- */
-const sanitizeUsername = (username) => username;
-
-/**
  * Executed when an action was received by the server from a client
  * @param {TransferAction} action
  * @param {ActionHandler} hand
@@ -86,14 +81,14 @@ function onClientAction(action, hand)
 {
     const { type } = action;
 
-    dbg("ClientAction", `Received action of type ${type} from client, data: ${JSON.stringify(action.data)}`, "server");
+    dbg("ClientAction", `Received action of type '${type}' from client, data: ${JSON.stringify(action.data)}`, "server");
 
     switch(type)
     {
     case "handshake":
         {
             const { data } = action;
-            const finalUsername = sanitizeUsername(data.username);
+            const finalUsername = sanitizeText(data.username);
 
             const sessionID = randomUUID({ disableEntropyCache: true });
 

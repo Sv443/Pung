@@ -3,3 +3,6 @@ node_modules/
 
 # log files
 errors.json
+
+# environment variables
+.env
