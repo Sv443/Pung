@@ -30,6 +30,14 @@ class ActionHandler extends EventEmitter {
         this.hookEvents();
     }
 
+    /**
+     * Closes the socket connection and cleans up the ActionHandler
+     */
+    close()
+    {
+        this.sock.close();
+    }
+
     hookEvents()
     {
         this.sock.on("message", (chunk) => {

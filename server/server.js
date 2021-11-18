@@ -65,7 +65,7 @@ function clientConnect(sock, req)
         console.log(reason);
 
         // TODO:
-        // act.clear();
+        sock.close();
     });
 
     hand.on("response", (action) => onClientAction(action, hand));
@@ -177,6 +177,7 @@ function connectionError(...a)
 
 function respondError()
 {
+    console.log();
     // TODO:
 }
 

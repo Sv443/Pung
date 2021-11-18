@@ -30,6 +30,8 @@ const persistentData = {
 };
 
 
+//#MARKER entrypoint
+
 async function run()
 {
     try
@@ -66,12 +68,14 @@ async function run()
     }
 }
 
+//#MARKER menus
+
 async function mainMenu()
 {
     console.clear();
     console.log(`Pung - Main menu\n`);
 
-    const { option } = prompt({
+    const { option } = await prompt({
         type: "select",
         message: "Select an option",
         choices: [
@@ -112,11 +116,13 @@ async function mainMenu()
 
         break;
     case "exit":
-        sock.close();
+        act.close();
 
         return exit(0);
     }
 }
+
+//#MARKER server communication
 
 /**
  * Called whenever the server sends this client an action
