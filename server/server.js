@@ -2,7 +2,7 @@ const { WebSocketServer } = require("ws");
 const { randomUUID } = require("crypto");
 
 const ActionHandler = require("../common/ActionHandler");
-const { generateLobbyID } = require("../common/Lobby");
+const Lobby = require("../common/Lobby");
 const dbg = require("../common/dbg");
 
 const cfg = require("../config");
@@ -86,7 +86,7 @@ function onClientAction(action, hand)
 {
     const { type } = action;
 
-    dbg("ClientAction", `Received action of type ${type}`, "server");
+    dbg("ClientAction", `Received action of type ${type} from client, data: ${JSON.stringify(action.data)}`, "server");
 
     switch(type)
     {
@@ -108,16 +108,12 @@ function onClientAction(action, hand)
             const { data } = action;
 
             // TODO:
-            
-            const lobbyID = generateLobbyID();
+
+            const lobbyID = Lobby.generateLobbyID();
 
             // registerLobby(lobbyID, data.username, data.sessionID);
 
-            /** @type {LobbySettings} */
-            const initialSettings = {
-                winScore: 5,
-                difficulty: "medium",
-            };
+            const initialSettings = Lobby.getDefaultSettings();
 
             hand.dispatch({
                 type: "ackJoinLobby",

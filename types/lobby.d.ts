@@ -8,3 +8,9 @@ export interface LobbySettings {
     /** The game's difficulty */
     difficulty: Difficulty;
 }
+
+/** A user in a lobby */
+export interface LobbyUser {
+    sessionID: string;
+    isAdmin: boolean;
+}

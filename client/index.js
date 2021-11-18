@@ -1,8 +1,9 @@
 const prompt = require("prompts");
 const { WebSocket } = require("ws");
-const { colors } = require("svcorelib");
+const { colors, pause } = require("svcorelib");
 
 const ActionHandler = require("../common/ActionHandler");
+const dbg = require("../common/dbg");
 
 const col = colors.fg;
 const { exit } = process;
@@ -122,6 +123,29 @@ async function mainMenu()
     }
 }
 
+/**
+ * Displays the lobby
+ */
+async function displayLobby()
+{
+    // TODO:
+    // if(both_players_ready)
+    //     return playGame();
+
+    const lines = [
+        `${col.blue}Pung - Lobby${col.rst}`,
+        `Join Code: ${persistentData.lobbyID}`,
+        ``,
+        `Player 1:  ${persistentData.username}`,
+        `Player 2:  TODO:`,
+        ``,
+    ];
+
+    process.stdout.write(`${lines.join("\n")}\n`);
+
+    setTimeout(displayLobby, 3000);
+}
+
 //#MARKER server communication
 
 /**
@@ -131,6 +155,8 @@ async function mainMenu()
 function incomingAction(action)
 {
     const { type } = action;
+
+    dbg("ServerAction", `Received action of type '${type}' from server, data: ${JSON.stringify(action.data)}`, "client");
 
     switch(type)
     {
@@ -143,12 +169,17 @@ function incomingAction(action)
     case "ackJoinLobby":
         persistentData.lobbyID = action.data.lobbyID;
         persistentData.lobbySettings = action.data.initialSettings;
+
+        displayLobby();
         break;
     case "broadcastLobbySettings":
         persistentData.lobbySettings = action.data;
         break;
     case "broadcastGameUpdate":
         // TODO:
+        break;
+    default:
+
         break;
     }
 }
