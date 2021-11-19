@@ -29,8 +29,10 @@ class ActionHandler extends EventEmitter {
 
         /** @type {number} When the last action was dispatched */
         this.lastDispatch = -1;
-        /** @type {number} When the last action was received */
+        /** @type {number} When the last valid action was received */
         this.lastReceive = -1;
+        /** @type {number} When the last message was received */
+        this.lastMessageTimestamp = -1;
 
         // TODO: on interval, check lastDispatch, if > some amount of time, send a heartbeat request to the server
         // TODO: implement heartbeat system into server, to automatically clean up expired sessions
@@ -49,6 +51,7 @@ class ActionHandler extends EventEmitter {
     hookEvents()
     {
         this.sock.on("message", (chunk) => {
+            this.lastMessageTimestamp = Date.now();
             try
             {
                 /** @type {TransferAction} */
@@ -96,6 +99,9 @@ class ActionHandler extends EventEmitter {
                 throw new TypeError(`Action data is not a valid object`);
 
             const timestamp = Date.now();
+
+            if(type === "pong")
+                data.internalLatency = Math.max(-1, Date.now() - this.lastMessageTimestamp);
 
             /** @type {TransferAction} */
             const transferAct = { actor, type, data, timestamp };

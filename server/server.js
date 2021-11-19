@@ -109,6 +109,25 @@ function onClientAction(action, hand)
             });
             break;
         }
+    case "ping":
+    {
+        const { data } = action;
+
+        const serverTime = new Date().getTime();
+        const serverTimeISO = new Date(serverTime).toISOString();
+        const clientTime = new Date(data.time).getTime();
+
+        hand.dispatch({
+            type: "pong",
+            data: {
+                clientTime: data.time,
+                serverTime: serverTimeISO,
+                latency: Math.max(serverTime, clientTime) - Math.min(serverTime, clientTime),
+            }
+        });
+
+        break;
+    }
     case "createLobby":
         {
             const { data } = action;

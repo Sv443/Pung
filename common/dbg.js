@@ -44,7 +44,7 @@ function dbg(section, message, actor, color = "blue")
         break;
     }
 
-    process.stdout.write(`${colCode}[${actor ? `${actor}/` : ""}${section}]: ${col.rst}${message}\n`);
+    process.stdout.write(`${colCode}[${actor ? `${actor}/` : ""}${col.rst}${section}${colCode}]: ${col.rst}${message}\n`);
 }
 
 module.exports = dbg;

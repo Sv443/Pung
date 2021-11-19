@@ -62,21 +62,12 @@ async function run()
 
         clearConsole();
 
-        const { username } = await prompt({
-            type: "text",
-            message: "Please enter your username for this session",
-            validate: (v) => v.length > 2,
-            name: "username",
-        });
-
+        const { username } = await promptUsername("Please enter your username for this session");
 
         act.dispatch({
             type: "handshake",
             data: { username },
         });
-
-        // so the process doesn't exit cause nothing is in the event queue
-        // setInterval(() => {}, 3600000);
     }
     catch(err)
     {
@@ -111,6 +102,14 @@ async function mainMenu()
             {
                 title: "Join a lobby",
                 value: "joinLobby",
+            },
+            {
+                title: `Change username (${persistentData.username})`,
+                value: "username",
+            },
+            {
+                title: "#DEBUG Ping",
+                value: "ping",
             },
             {
                 title: `${col.red}Exit${col.rst}`,
@@ -152,11 +151,48 @@ async function mainMenu()
 
         break;
     }
+    case "username":
+    {
+        const { username } = await promptUsername("Enter your new username");
+
+        act.dispatch({
+            type: "handshake",
+            data: { username },
+        });
+
+        break;
+    }
+    case "ping":
+        act.dispatch({
+            type: "ping",
+            data: {
+                time: new Date().toISOString(),
+            }
+        });
+    
+        break;
     case "exit":
         act.close();
 
         return exit(0);
     }
+}
+
+/**
+ * Prompts for a username
+ * @param {string} message
+ * @returns {Promise<string>}
+ */
+function promptUsername(message)
+{
+    return new Promise(async (res) => {
+        return res(await prompt({
+            type: "text",
+            message,
+            validate: (v) => v.length > 2,
+            name: "username",
+        }));
+    });
 }
 
 function resetLobbyData()
@@ -433,6 +469,18 @@ async function incomingAction(action)
         mainMenu();
         break;
     }
+    case "pong":
+    {
+        /** @type {TransferAction} */
+        const { data } = action;
+
+        console.log(`\n${col.green}Pong:${col.rst} Connection latency = ${col.green}${data.latency}ms${col.rst} • Server internal latency = ${col.green}${data.internalLatency}ms${col.rst}\n`);
+
+        await pause("Press any key to return…");
+
+        mainMenu();
+        break;
+    }
     case "ackJoinLobby":
     {
         /** @type {TransferAction} */
@@ -450,9 +498,9 @@ async function incomingAction(action)
         /** @type {TransferAction} */
         const { data } = action;
 
-        console.log(`Couldn't find lobby with ID ${col.yellow}${formatLobbyID(data.lobbyID)}${col.rst}\n`);
+        console.log(`\nCouldn't find lobby with ID ${col.yellow}${formatLobbyID(data.lobbyID)}${col.rst}\n`);
 
-        await pause();
+        await pause("Press any key to return…");
 
         mainMenu();
 

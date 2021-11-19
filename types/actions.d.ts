@@ -11,13 +11,15 @@ import { LobbySettings, LobbyUser } from "./lobby";
  *   
  * | Type | Actor |
  * | :-- | :-- |
- * | `ack` | server -> client |
- * | `broadcast` | server -> client |
- * | other | client -> server |
+ * | `ackFoo` | `server -> client` |
+ * | `broadcastBar` | `server -> client` |
+ * | other | usually `client -> server` |
  */
 export type ActionType =
     // connection
-    "handshake" | "ackHandshake" |
+    "handshake" | "ackHandshake" | "logoff" |
+    // ping
+    "ping" | "pong" |
     // lobby
     "createLobby" | "joinLobby" | "lobbyNotFound" | "ackJoinLobby" |
     "changeLobbySettings" | "broadcastLobbyUpdate" |
@@ -59,6 +61,40 @@ export interface AckHandshake extends ActionBase {
         finalUsername: string;
         /** Session ID */
         sessionID: string;
+    };
+}
+
+/** Sent from a client to the server to indicate it wants to log off */
+export interface Logoff extends ActionBase {
+    type: "logoff";
+    data: {
+        sessionID: string;
+    };
+}
+
+//#SECTION ping
+
+/** Sent from client to server to ping */
+declare interface Ping extends ActionBase {
+    type: "ping";
+    data: {
+        /** Timestamp of the client in [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) format */
+        time: string;
+    };
+}
+
+/** Sent from server to client in response to a ping */
+declare interface Pong extends ActionBase {
+    type: "pong";
+    data: {
+        /** Timestamp of the server in [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) format */
+        serverTime: string;
+        /** Original timestamp of the client in [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) format */
+        clientTime: string;
+        /** Connection latency in milliseconds (depending on client & server's system times) */
+        latency: number;
+        /** Internal processing latency in milliseconds */
+        internalLatency: number;
     };
 }
 
@@ -179,7 +215,9 @@ export interface GameUpdate extends ActionBase {
 /** Any action of any type */
 export type Action =
     // connection
-    Handshake | AckHandshake |
+    Handshake | AckHandshake | Logoff |
+    // ping
+    Ping | Pong |
     // lobby
     CreateLobby | JoinLobby | LobbyNotFound | AckJoinLobby |
     ChangeLobbySettings | BroadcastLobbyUpdate |
