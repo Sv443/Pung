@@ -1,6 +1,8 @@
 const { join } = require("path");
 
 const cfg = {
+    /** Target FPS of the game */
+    frameRate: 10,
     /** Set to true to enable debug logging to the console */
     debugEnabled: true,
     /** Path to the error log file (JSON) */

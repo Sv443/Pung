@@ -180,34 +180,32 @@ declare interface AckRemovedFromLobby extends ActionBase {
 
 //#SECTION ingame
 
+export interface GameObj {
+    // TODO: some of these props don't need to be transmitted on every frame
+    /** Info about the game */
+    game: {
+        /** Size of the playing field */
+        size: {
+            w: number;
+            h: number;
+        };
+    };
+    /** Info about the players */
+    players: (LobbyUser & {
+        score: number;
+        y: number;
+    })[];
+    /** Info about the ball */
+    ball: {
+        x: number;
+        y: number;
+    };
+};
+
 /** This action sends game updates, from server to client */
 export interface GameUpdate extends ActionBase {
     type: "broadcastGameUpdate";
-    data: {
-        // TODO: some of these props don't need to be transmitted on every frame
-        /** Info about the game */
-        game: {
-            /** Size of the playing field */
-            size: {
-                w: number;
-                h: number;
-            };
-        };
-        /** Info about the players */
-        players: [
-            {
-                id: string;
-                score: number;
-                x: number;
-                y: number;
-            }
-        ];
-        /** Info about the ball */
-        ball: {
-            x: number;
-            y: number;
-        };
-    };
+    data: GameObj;
 }
 
 //#MARKER composite type
