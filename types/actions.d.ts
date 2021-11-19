@@ -7,17 +7,19 @@ import { LobbySettings, LobbyUser } from "./lobby";
 /**
  * The action type indicates the format of the data sent between client and server  
  *   
+ * Naming convention:  
+ *   
  * | Type | Actor |
  * | :-- | :-- |
- * | normal | client -> server |
  * | `ack` | server -> client |
  * | `broadcast` | server -> client |
+ * | other | client -> server |
  */
 export type ActionType =
     // connection
     "handshake" | "ackHandshake" |
     // lobby
-    "createLobby" | "joinLobby" | "ackJoinLobby" |
+    "createLobby" | "joinLobby" | "lobbyNotFound" | "ackJoinLobby" |
     "changeLobbySettings" | "broadcastLobbyUpdate" |
     "deleteLobby" | "ackRemovedFromLobby" |
     // ingame
@@ -77,7 +79,16 @@ declare interface CreateLobby extends ActionBase {
 declare interface JoinLobby extends ActionBase {
     type: "joinLobby";
     data: {
-        // TODO:
+        username: string;
+        sessionID: string;
+        lobbyID: string;
+    };
+}
+
+/** Sent from server to client to tell the client */
+declare interface LobbyNotFound extends ActionBase {
+    type: "lobbyNotFound";
+    data: {
         lobbyID: string;
     };
 }
@@ -170,7 +181,7 @@ export type Action =
     // connection
     Handshake | AckHandshake |
     // lobby
-    CreateLobby | JoinLobby | AckJoinLobby |
+    CreateLobby | JoinLobby | LobbyNotFound | AckJoinLobby |
     ChangeLobbySettings | BroadcastLobbyUpdate |
     DeleteLobby | AckRemovedFromLobby |
     // ingame

@@ -1,6 +1,6 @@
 const prompt = require("prompts");
 const { WebSocket } = require("ws");
-const { colors, isEmpty } = require("svcorelib");
+const { colors, isEmpty, pause } = require("svcorelib");
 const dotenv = require("dotenv");
 
 const ActionHandler = require("../common/ActionHandler");
@@ -130,14 +130,28 @@ async function mainMenu()
 
         break;
     case "joinLobby":
+    {
+        clearConsole();
+
+        const { lobbyID } = await prompt({
+            type: "text",
+            message: "Enter six letter lobby code",
+            initial: "ABC XYZ",
+            name: "lobbyID",
+            validate: (val) => val.trim().toUpperCase().match(/^(\w{6}|\w{3}\s+\w{3})$/),
+        });
+
         act.dispatch({
             type: "joinLobby",
             data: {
-                // TODO:
+                username,
+                sessionID,
+                lobbyID: lobbyID.replace(/\s/g, "").toUpperCase(),
             },
         });
 
         break;
+    }
     case "exit":
         act.close();
 
@@ -150,6 +164,11 @@ function resetLobbyData()
     persistentData.lobbyID = undefined;
     persistentData.lobbySettings = undefined;
     persistentData.isLobbyAdmin = false;
+}
+
+function formatLobbyID(lobbyID)
+{
+    return `${lobbyID.substr(0, 3)} ${lobbyID.substr(3, 3)}`;
 }
 
 /**
@@ -180,10 +199,10 @@ async function displayLobby()
     const lines = [
         `#DEBUG SessID: ${persistentData.sessionID}`,
         ``,
-        `┌──────────────┬────────────────────┐`,
-        `│    ${col.blue}Pung - Lobby${col.rst}    │    Join Code: ${col.green}${persistentData.lobbyID.substr(0, 3)} ${persistentData.lobbyID.substr(3, 3)}${col.rst}    │`,
-        `├──────────────┴────────────────────┘`,
-        `│ You: ${col.green}${truncUser(persistentData.username, 16)}${col.rst} ${persistentData.isLobbyAdmin ? `${col.cyan} ♦${col.rst}` : "  "} │ ${col.yellow}${truncUser(persistentData.username, 21)}${col.rst} ${persistentData.isLobbyAdmin ? "  " : `${col.cyan} ♦${col.rst}`} │`,
+        `┌────────────────────┬──────────────────────────┐`,
+        `│    ${col.blue}Pung - Lobby${col.rst}    │    Join Code: ${col.green}${formatLobbyID(persistentData.lobbyID)}${col.rst}    │`,
+        `├────────────────────┴───┬──────────────────────┘`,
+        `│ You: ${col.green}${truncUser(persistentData.username, 16)}${col.rst} ${persistentData.isLobbyAdmin ? `${col.cyan} ♦${col.rst}` : "  "} │ ${col.yellow}${truncUser("TODO", 21)}${col.rst} ${persistentData.isLobbyAdmin ? "  " : `${col.cyan} ♦${col.rst}`} │`,
         ``,
         ``,
         `Settings:`,
@@ -395,7 +414,7 @@ function clearConsole()
  * Called whenever the server sends this client an action
  * @param {TransferAction} action
  */
-function incomingAction(action)
+async function incomingAction(action)
 {
     const { type } = action;
 
@@ -424,6 +443,19 @@ function incomingAction(action)
         persistentData.isLobbyAdmin = data.isAdmin;
 
         displayLobby();
+        break;
+    }
+    case "lobbyNotFound":
+    {
+        /** @type {TransferAction} */
+        const { data } = action;
+
+        console.log(`Couldn't find lobby with ID ${col.yellow}${formatLobbyID(data.lobbyID)}${col.rst}\n`);
+
+        await pause();
+
+        mainMenu();
+
         break;
     }
     case "BroadcastLobbyUpdate":

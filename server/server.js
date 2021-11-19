@@ -92,11 +92,9 @@ function clientConnect(sock, req)
  */
 function onClientAction(action, hand)
 {
-    const { type } = action;
+    dbg("ClientAction", `Received action of type '${action.type}' from client, data: ${JSON.stringify(action.data)}`, "server");
 
-    dbg("ClientAction", `Received action of type '${type}' from client, data: ${JSON.stringify(action.data)}`, "server");
-
-    switch(type)
+    switch(action.type)
     {
     case "handshake":
         {
@@ -139,33 +137,49 @@ function onClientAction(action, hand)
         {
             const { data } = action;
 
-            unused(data);
+            const { username, sessionID, lobbyID } = data;
 
-            // TODO:
-            // const { lobbyID, initialSettings } = lookupLobby(data.lobbyID);
+            const lobby = lobbies.find(lobby => lobby.lobbyID === lobbyID);
 
-            // hand.dispatch({
-            //     type: "ackJoinLobby",
-            //     data: { lobbyID, initialSettings },
-            // });
+            if(lobby)
+            {
+                lobby.addUser(username, sessionID, false);
 
+                hand.dispatch({
+                    type: "ackJoinLobby",
+                    data: {
+                        lobbyID,
+                        initialSettings: lobby.settings,
+                        isAdmin: false,
+                    },
+                });
+            }
+            else
+            {
+                hand.dispatch({
+                    type: "lobbyNotFound",
+                    data: { lobbyID },
+                });
+            }
             break;
         }
     case "changeLobbySettings":
         {
             const { data } = action;
 
-            // TODO:
-            // isLobbyHost(data.sessionID);
-            // validateLobbySettings(data.settings);
-
             const lobby = lobbies.find(lobby => lobby.isAdmin(data.sessionID));
+
+            if(!lobby)
+                break;
 
             lobby.settings = data.settings;
 
             hand.dispatch({
                 type: "broadcastLobbyUpdate",
-                data,
+                data: {
+                    players: lobby.users,
+                    settings: lobby.settings,
+                },
             });
 
             break;
