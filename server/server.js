@@ -109,6 +109,14 @@ function onClientAction(action, hand)
             });
             break;
         }
+    case "logoff":
+    {
+        const { data } = action;
+
+        dbg("Logoff", `Client ${data.sessionID} is logging off`, "server");
+
+        break;
+    }
     case "ping":
     {
         const { data } = action;

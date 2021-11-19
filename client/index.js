@@ -156,6 +156,11 @@ async function mainMenu()
         const { username } = await promptUsername("Enter your new username");
 
         act.dispatch({
+            type: "logoff",
+            data: { sessionID },
+        });
+
+        act.dispatch({
             type: "handshake",
             data: { username },
         });
@@ -172,6 +177,11 @@ async function mainMenu()
     
         break;
     case "exit":
+        act.dispatch({
+            type: "logoff",
+            data: { sessionID },
+        });
+
         act.close();
 
         return exit(0);
