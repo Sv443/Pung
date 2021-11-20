@@ -6,6 +6,8 @@ const dotenv = require("dotenv");
 const ActionHandler = require("../common/ActionHandler");
 const dbg = require("../common/dbg");
 
+const { startGame } = require("./game");
+
 const cfg = require("../config");
 
 const col = colors.fg;
@@ -31,8 +33,8 @@ const persistentData = {
     lobbyID: undefined,
     /** @type {LobbySettings} */
     lobbySettings: undefined,
-    /** @type {boolean} */
     isLobbyAdmin: false,
+    lobbyInGame: false,
 };
 
 dotenv.config();
@@ -229,8 +231,8 @@ async function displayLobby()
     }
 
     // TODO:
-    // if(both_players_ready)
-    //     return playGame();
+    if(persistentData.lobbyInGame)
+        return startGame(act, persistentData.sessionID, persistentData.lobbyID);
 
     const truncUser = (username, maxSpace) => {
         const spacesAmt = username.length - 10;
@@ -516,13 +518,22 @@ async function incomingAction(action)
 
         break;
     }
-    case "BroadcastLobbyUpdate":
+    case "broadcastLobbyUpdate":
     {
         /** @type {TransferAction} */
         const { data } = action;
 
         persistentData.lobbySettings = data.settings;
         persistentData.lobbyPlayers = data.players;
+        break;
+    }
+    case "broadcastGameStarted":
+    {
+        /** @type {TransferAction} */
+        const { data } = action;
+
+        persistentData.lobbyInGame = true;
+
         break;
     }
     case "broadcastGameUpdate":

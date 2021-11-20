@@ -1,31 +1,29 @@
+const dbg = require("../common/dbg");
 const cfg = require("../config");
 
 
+/** @typedef {import("../common/ActionHandler")} ActionHandler */
 /** @typedef {import("../common/Lobby")} Lobby */
+/** @typedef {import("../types/game").GameStartedData} GameStartedData */
 /** @typedef {import("../types/actions").GameObj} GameObj */
 
 
 /** @type {GameObj} */
 let game = {};
-/** @type {Lobby} */
-let lobby;
-/** @type {string} */
-let sessID;
+/** @type {LobbyUser} */
+let lobbyAdmin;
 
 
 //#MARKER run game
 
 /**
  * Starts a new game
+ * @param {ActionHandler} hand
  * @param {string} sessionID
- * @param {Lobby} gameLobby
+ * @param {string} lobbyID
  */
-function startGame(sessionID, gameLobby)
+function startGame(hand, sessionID, lobbyID)
 {
-    sessID = sessionID;
-
-    lobby = gameLobby;
-
     //#DEBUG
     game = {
         ball: {
@@ -48,6 +46,22 @@ function startGame(sessionID, gameLobby)
             },
         ],
     };
+
+    hand.dispatch({
+        type: "startGame",
+        data: { lobbyID, sessionID },
+    });
+}
+
+/**
+ * Called when the server confirms the game started
+ * @param {GameStartedData} data
+ */
+function gameStarted(data)
+{
+    const { lobbyID } = data;
+
+    dbg("Game", `Server has indicated the lobby '${lobbyID}' has started a game`, "client", "yellow");
 }
 
 /**
@@ -64,6 +78,7 @@ function updateGame(gameObj)
 function displayGame()
 {
     const lines = [
+        `Player foo  - vs -  Player bar`,
         ``
     ];
 
@@ -71,4 +86,4 @@ function displayGame()
 }
 
 
-module.exports = { startGame, updateGame, displayGame };
+module.exports = { startGame, gameStarted, updateGame, displayGame };

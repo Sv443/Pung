@@ -1,4 +1,5 @@
 import { LobbySettings, LobbyUser } from "./lobby";
+import { GameStartedData } from "./game";
 
 
 //#MARKER dependent types
@@ -24,6 +25,7 @@ export type ActionType =
     "createLobby" | "joinLobby" | "lobbyNotFound" | "ackJoinLobby" |
     "changeLobbySettings" | "broadcastLobbyUpdate" |
     "deleteLobby" | "ackRemovedFromLobby" |
+    "startGame" | "broadcastGameStarted" |
     // ingame
     "broadcastGameUpdate"
 ;
@@ -178,6 +180,23 @@ declare interface AckRemovedFromLobby extends ActionBase {
     }
 }
 
+/** Sent from admin client to server to request the game to start */
+declare interface StartGame extends ActionBase {
+    type: "startGame";
+    data: {
+        /** Which lobby to start */
+        lobbyID: string;
+        /** The sessionID of the admin client */
+        sessionID: string;
+    }
+}
+
+/** Sent from server to all clients in the lobby to inform about the game starting */
+declare interface BroadcastGameStarted extends ActionBase {
+    type: "broadcastGameStarted";
+    data: GameStartedData;
+}
+
 //#SECTION ingame
 
 export interface GameObj {
@@ -220,6 +239,7 @@ export type Action =
     CreateLobby | JoinLobby | LobbyNotFound | AckJoinLobby |
     ChangeLobbySettings | BroadcastLobbyUpdate |
     DeleteLobby | AckRemovedFromLobby |
+    StartGame | BroadcastGameStarted |
     // ingame
     GameUpdate
 ;
