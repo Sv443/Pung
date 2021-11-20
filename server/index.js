@@ -5,9 +5,11 @@ const { writeFile, readFile } = require("fs-extra");
 const yargs = require("yargs");
 
 const packageJson = require("../package.json");
+const settings = require("../common/settings");
 const cfg = require("../config");
 
 const server = require("./server");
+
 
 const { exit } = process;
 const col = colors.fg;
@@ -24,6 +26,8 @@ async function run()
 
     try
     {
+        await settings.init();
+
         await init();
 
         const port = args.port ?? cfg.defaultServerPort;

@@ -91,7 +91,7 @@ class ActionHandler extends EventEmitter {
             this.emit("close", code, reason);
         });
 
-        this.sock.on("error", (sock, err) => {
+        this.sock.on("error", (err) => {
             this.emit("error", err);
         });
     }

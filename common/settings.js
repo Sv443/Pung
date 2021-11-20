@@ -5,24 +5,32 @@ const YAML = require("yaml");
 const cfg = require("../config");
 
 
+/** @typedef {import("../types/actions").Actor} Actor */
 /** @typedef {import("../types/settings").ClientSettings} ClientSettings */
+/** @typedef {import("../types/settings").ServerSettings} ServerSettings */
+/** @typedef {import("../types/settings").Settings} Settings */
 
 
 const settingsPath = "./settings.yml";
 
-/** @type {ClientSettings} */
+/** @type {Settings} */
 let settings;
 
-/** @type {ClientSettings} */
-const defaultClientSettings = Object.freeze({
-    serverHost: "localhost", // TODO: change this to "sv443.net" once that's running
-    serverPort: cfg.defaultClientPort, // TODO: this too maybe?
+/** @type {Settings} */
+const defaultSettings = Object.freeze({
+    client: {
+        serverHost: "localhost", // TODO: change this to "sv443.net" once that's running
+        serverPort: cfg.defaultClientPort, // TODO: change this too maybe?
+    },
+    server: {
+
+    },
 });
 
 
 /**
  * Initializes the user settings module
- * @returns {Promise<ClientSettings, Error>}
+ * @returns {Promise<Settings, Error>}
  */
 function init()
 {
@@ -30,11 +38,11 @@ function init()
         try
         {
             if(!(await filesystem.exists(settingsPath)))
-                await saveSettings(defaultClientSettings);
+                await saveSettings(defaultSettings);
 
-            const clientSettings = await reloadSettings();
+            const settings = await reloadSettings();
 
-            return res(clientSettings);
+            return res(settings);
         }
         catch(err)
         {
@@ -45,7 +53,7 @@ function init()
 
 /**
  * Reads from the client settings file and saves it locally
- * @returns {Promise<ClientSettings, Error>}
+ * @returns {Promise<Settings, Error>}
  */
 function reloadSettings()
 {
@@ -68,7 +76,7 @@ function reloadSettings()
 
 /**
  * Saves the JSON client settings to the client settings file as YAML
- * @param {ClientSettings} settings
+ * @param {Settings} settings
  * @param {boolean} [enableDefaults=true] Set to false to disable default values for the settings properties
  * @returns {Promise<void, Error>}
  */
@@ -78,7 +86,7 @@ function saveSettings(settings, enableDefaults = true)
         try
         {
             if(enableDefaults !== false)
-                settings = { ...defaultClientSettings, ...settings };
+                settings = { ...defaultSettings, ...settings };
 
             await writeFile(settingsPath, YAML.stringify(settings));
 
@@ -93,15 +101,19 @@ function saveSettings(settings, enableDefaults = true)
 
 /**
  * Returns the current client settings object
+ * @param {Actor} [actor] Leave undefined to return both actors' settings
  * @param {boolean} [enableDefaults=true] Set to false to disable default values for the settings properties
- * @returns {ClientSettings}
+ * @returns {Settings|(ClientSettings|ServerSettings)}
  */
-function getSettings(enableDefaults = true)
+function getSettings(actor, enableDefaults = true)
 {
+    /** @param {Settings} sett */
+    const getSett = sett => actor ? sett[actor] : sett;
+
     if(enableDefaults !== false)
-        return { ...defaultClientSettings, ...settings };
+        return getSett({ ...defaultSettings, ...settings });
     else
-        return settings;
+        return getSett(settings);
 }
 
-module.exports = { init, getSettings, reloadSettings };
+module.exports = { init, getSettings, reloadSettings, settingsPath };

@@ -13,6 +13,8 @@ const cfg = {
     defaultServerPort: 6941,
     /** Maximum difference allowed between server and client system time, in milliseconds */
     maxTimestampDiff: 60000,
+    /** Status page URL */
+    statusURL: "https://status.sv443.net",
 };
 
 module.exports = Object.freeze(cfg);

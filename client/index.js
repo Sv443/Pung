@@ -7,7 +7,7 @@ const ActionHandler = require("../common/ActionHandler");
 const dbg = require("../common/dbg");
 
 const { startGame } = require("./game");
-const settings = require("./settings");
+const settings = require("../common/settings");
 
 const cfg = require("../config");
 
@@ -63,8 +63,34 @@ async function run()
 
         act.on("action", (action) => incomingAction(action));
 
-        act.on("error", (err) => {
-            console.log(`${col.red}Error in ActionHandler:${col.rst}\n${err.stack}`);
+        act.on("error", async (err) => {
+            /** Call to close the connection */
+            const closeConn = async () => {
+                act.close();
+
+                setTimeout(() => exit(1), 15000);
+
+                await pause("Press any key to exit (or wait 15s)…");
+
+                exit(1);
+            };
+
+            if(err?.code === "ECONNREFUSED")
+            {
+                console.log(`\n\n${col.red}Can't connect to server at '${host}':${col.rst}\n`);
+                console.log(`To check the status of the default server, visit ${cfg.statusURL}`);
+                console.log(`If this issue persists, please delete the client settings file at '${settings.settingsPath}' to restore your settings to the defaults and try again\n`);
+
+                return closeConn();
+            }
+            else
+            {
+                console.log(`${col.red}Error in ActionHandler:${col.rst}`);
+                err.address && console.log(`Can't connect to address '${err.address}'`);
+                console.log(err instanceof Error ? err.stack : err ? err.toString() : "(Unknown Error)");
+
+                return closeConn();
+            }
         });
     
 
