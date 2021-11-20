@@ -46,11 +46,12 @@ async function run()
 {
     try
     {
-        /** #DEBUG */
-        const useVPS = false;
+        const useDefaultServer = (process.env.SERVER_HOSTNAME && process.env.SERVER_HOSTNAME.length > 0) ? false : true;
 
-        const host = useVPS ? process.env.SERVER_HOSTNAME : "localhost";
-        const port = useVPS ? cfg.defaultClientPort : cfg.defaultServerPort;
+        const defaultServer = "localhost"; // TODO: replace with "sv443.net" once that part is working
+
+        const host = useDefaultServer ? defaultServer : process.env.SERVER_HOSTNAME;
+        const port = useDefaultServer ? cfg.defaultServerPort : cfg.defaultClientPort;
     
         sock = new WebSocket(`ws://${host}:${port}`);
 

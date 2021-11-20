@@ -6,3 +6,6 @@ error-log.json
 
 # environment variables
 .env
+
+# dev files
+test.js

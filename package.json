@@ -31,6 +31,7 @@
     "prompts": "^2.4.2",
     "svcorelib": "^1.14.2",
     "ws": "^8.2.3",
+    "yaml": "^1.10.2",
     "yargs": "^17.2.1"
   },
   "devDependencies": {
