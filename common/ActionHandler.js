@@ -1,9 +1,14 @@
 const { EventEmitter } = require("events");
 const { WebSocket } = require("ws");
 
+const errors = require("./data/errors.json");
+
+
 /** @typedef {import("../types/actions").Action} Action */
 /** @typedef {import("../types/actions").TransferAction} TransferAction */
 /** @typedef {import("../types/actions").Actor} Actor */
+/** @typedef {import("../types/actions").ErrorAction} ErrorAction */
+/** @typedef {import("../types/errors").ErrCodes} ErrCodes */
 
 
 class ActionHandler extends EventEmitter {
@@ -60,12 +65,14 @@ class ActionHandler extends EventEmitter {
                 if(ActionHandler.isValidAction(action))
                 {
                     this.lastReceive = Date.now();
-                    this.emit("response", action);
+                    this.emit("action", action);
                 }
+                else
+                    this.respondError(1007, "101", `The payload data you sent is not a valid action (type or data properties are invalid / missing)`);
             }
             catch(err)
             {
-                this.emit("error", err);
+                this.respondError(1007, "102", `The payload data you sent could not be parsed by the recipient (you are a ${this.actor})`);
             }
         });
 
@@ -98,13 +105,15 @@ class ActionHandler extends EventEmitter {
             if(typeof data !== "object")
                 throw new TypeError(`Action data is not a valid object`);
 
+            const error = false;
+
             const timestamp = Date.now();
 
             if(type === "pong")
                 data.internalLatency = Math.max(-1, Date.now() - this.lastMessageTimestamp);
 
             /** @type {TransferAction} */
-            const transferAct = { actor, type, data, timestamp };
+            const transferAct = { error, type, actor, data, timestamp };
 
             this.lastDispatch = timestamp;
 
@@ -113,6 +122,37 @@ class ActionHandler extends EventEmitter {
         catch(err)
         {
             this.emit("error", err);
+        }
+    }
+
+    /**
+     * Responds with an error
+     * @param {1007|1011|-1} exitCode 1007 for "Unsupported payload", 1011 for "Server error", -1 to not exit
+     * @param {ErrCodes} code Common error code (in file 'common/data/errors.json')
+     * @param {string} [message]
+     */
+    respondError(exitCode, code, message)
+    {
+        if(typeof message !== "string" || message.length === 0)
+            message = null;
+
+        /** @type {ErrorAction} */
+        const response = {
+            type: "error",
+            error: true,
+            name: errors[code],
+            code: parseInt(code),
+            message,
+        };
+
+        if(exitCode >= 0)
+            this.sock.close(exitCode, JSON.stringify(response));
+        else
+        {
+            this.sock.send(JSON.stringify(response), (err) => {
+                if(err)
+                    this.sock.close();
+            });
         }
     }
 

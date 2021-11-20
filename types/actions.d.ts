@@ -17,6 +17,8 @@ import { GameStartedData } from "./game";
  * | other | usually `client -> server` |
  */
 export type ActionType =
+    // error
+    "error" |
     // connection
     "handshake" | "ackHandshake" | "logoff" |
     // ping
@@ -227,10 +229,24 @@ export interface GameUpdate extends ActionBase {
     data: GameObj;
 }
 
+//#SECTION error
+
+/** This action is sent between any actors and is used to indicate an error */
+export interface ErrorAction {
+    type: "error";
+    /** Error code */
+    code: ErrorCode;
+    /** Name of the error */
+    name: string;
+    message: string | null;
+}
+
 //#MARKER composite type
 
 /** Any action of any type */
 export type Action =
+    // error
+    ErrorAction |
     // connection
     Handshake | AckHandshake | Logoff |
     // ping
@@ -245,7 +261,9 @@ export type Action =
 ;
 
 /** Includes properties that are needed for transfer between the server's and client's ActionHandler's */
-export type TransferAction = Action & {
+export type TransferAction = Action & ErrorAction & {
+    /** Indicates whether the actor who sent this has encountered an error */
+    error: boolean;
     /** Indicates who sent this action */
     actor: Actor;
     /** Timestamp of when the action was sent, in the actor's system time */

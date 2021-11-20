@@ -78,7 +78,7 @@ function clientConnect(sock, req)
         sock.close();
     });
 
-    hand.on("response", (action) => onClientAction(action, hand));
+    hand.on("action", (action) => onClientAction(action, hand));
 
     hand.on("error", (err) => {
         console.log(`${col.red}Error in ActionHandler:${col.rst}\n${err.stack}`);

@@ -56,7 +56,7 @@ async function run()
 
         act = new ActionHandler("client", sock);
 
-        act.on("response", (action) => incomingAction(action));
+        act.on("action", (action) => incomingAction(action));
 
         act.on("error", (err) => {
             console.log(`${col.red}Error in ActionHandler:${col.rst}\n${err.stack}`);
