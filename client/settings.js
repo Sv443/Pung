@@ -2,6 +2,8 @@ const { filesystem } = require("svcorelib");
 const { readFile, writeFile } = require("fs-extra");
 const YAML = require("yaml");
 
+const cfg = require("../config");
+
 
 /** @typedef {import("../types/settings").ClientSettings} ClientSettings */
 
@@ -14,9 +16,14 @@ let settings;
 /** @type {ClientSettings} */
 const defaultClientSettings = Object.freeze({
     serverHost: "localhost", // TODO: change this to "sv443.net" once that's running
+    serverPort: cfg.defaultClientPort, // TODO: this too maybe?
 });
 
 
+/**
+ * Initializes the user settings module
+ * @returns {Promise<ClientSettings, Error>}
+ */
 function init()
 {
     return new Promise(async (res, rej) => {
@@ -25,9 +32,9 @@ function init()
             if(!(await filesystem.exists(settingsPath)))
                 await saveSettings(defaultClientSettings);
 
-            await reloadSettings();
+            const clientSettings = await reloadSettings();
 
-            return res();
+            return res(clientSettings);
         }
         catch(err)
         {

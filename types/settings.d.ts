@@ -1,5 +1,7 @@
 
 export interface ClientSettings {
     /** Host of the server */
-    serverHost: string;
+    serverHost?: string;
+    /** Port of the server */
+    serverPort: number;
 }

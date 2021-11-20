@@ -1,3 +1,6 @@
+# client settings
+settings.yml
+
 # dependencies
 node_modules/
 

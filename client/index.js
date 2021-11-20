@@ -7,6 +7,7 @@ const ActionHandler = require("../common/ActionHandler");
 const dbg = require("../common/dbg");
 
 const { startGame } = require("./game");
+const settings = require("./settings");
 
 const cfg = require("../config");
 
@@ -46,15 +47,18 @@ async function run()
 {
     try
     {
-        const useDefaultServer = (process.env.SERVER_HOSTNAME && process.env.SERVER_HOSTNAME.length > 0) ? false : true;
+        const clientSettings = await settings.init();
+
+        const useDefaultServer = typeof clientSettings.serverHost !== "string";
 
         const defaultServer = "localhost"; // TODO: replace with "sv443.net" once that part is working
 
-        const host = useDefaultServer ? defaultServer : process.env.SERVER_HOSTNAME;
-        const port = useDefaultServer ? cfg.defaultServerPort : cfg.defaultClientPort;
+        const host = useDefaultServer ? defaultServer : clientSettings.serverHost;
+        const port = useDefaultServer ? cfg.defaultServerPort : clientSettings.serverPort;
     
         sock = new WebSocket(`ws://${host}:${port}`);
 
+    
         act = new ActionHandler("client", sock);
 
         act.on("action", (action) => incomingAction(action));
@@ -62,6 +66,7 @@ async function run()
         act.on("error", (err) => {
             console.log(`${col.red}Error in ActionHandler:${col.rst}\n${err.stack}`);
         });
+    
 
         clearConsole();
 
@@ -69,6 +74,7 @@ async function run()
 
         const timestamp = new Date().toISOString();
 
+    
         act.dispatch({
             type: "handshake",
             data: { username, timestamp },
