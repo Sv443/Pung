@@ -211,6 +211,9 @@ function onClientAction(action, hand)
 
             break;
         }
+    case "error":
+        // TODO:
+        break;
     default:
         respondError();
         break;

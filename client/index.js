@@ -544,6 +544,9 @@ async function incomingAction(action)
         // TODO:
         break;
     }
+    case "error":
+        // TODO:
+        break;
     default:
 
         break;
