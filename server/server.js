@@ -99,14 +99,38 @@ function onClientAction(action, hand)
     case "handshake":
         {
             const { data } = action;
+            const { timestamp } = data;
+
             const finalUsername = sanitizeText(data.username);
 
             const sessionID = generateSessID();
 
-            hand.dispatch({
-                type: "ackHandshake",
-                data: { finalUsername, sessionID },
-            });
+            const serverTS = Date.now();
+            const clientTS = new Date(timestamp).getTime();
+
+            let errReason = "Unknown reason";
+
+            if(Math.max(serverTS, clientTS) - Math.min(serverTS, clientTS) > cfg.maxTimestampDiff)
+                errReason = `Server and client system times vary by more than ${cfg.maxTimestampDiff} milliseconds (including connection latency)`;
+
+            if(!errReason)
+            {
+                hand.dispatch({
+                    type: "ackHandshake",
+                    data: { finalUsername, sessionID },
+                });
+            }
+            else
+            {
+                hand.dispatch({
+                    type: "denyHandshake",
+                    data: {
+                        reason: errReason,
+                        username: data.username,
+                        timestamp: serverTS,
+                    }
+                });
+            }
             break;
         }
     case "logoff":
@@ -213,6 +237,7 @@ function onClientAction(action, hand)
         }
     case "error":
         // TODO:
+        console.log(action);
         break;
     default:
         respondError();

@@ -1,0 +1,11 @@
+{
+    "100": {
+        "name": "Internal server error"
+    },
+    "101": {
+        "name": "Wrong action format"
+    },
+    "102": {
+        "name": "Payload format unsupported"
+    }
+}

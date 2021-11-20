@@ -66,9 +66,11 @@ async function run()
 
         const { username } = await promptUsername("Please enter your username for this session");
 
+        const timestamp = new Date().toISOString();
+
         act.dispatch({
             type: "handshake",
-            data: { username },
+            data: { username, timestamp },
         });
     }
     catch(err)
@@ -546,6 +548,7 @@ async function incomingAction(action)
     }
     case "error":
         // TODO:
+        console.log("Got error from server:", action);
         break;
     default:
 

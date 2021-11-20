@@ -32,6 +32,9 @@ class ActionHandler extends EventEmitter {
         /** @type {WebSocket} */
         this.sock = sock;
 
+        /** If the connection is open */
+        this.open = false;
+
         /** @type {number} When the last action was dispatched */
         this.lastDispatch = -1;
         /** @type {number} When the last valid action was received */
@@ -50,12 +53,15 @@ class ActionHandler extends EventEmitter {
      */
     close()
     {
+        this.open = false;
         this.sock.close();
     }
 
     hookEvents()
     {
         this.sock.on("message", (chunk) => {
+            this.open = true;
+
             this.lastMessageTimestamp = Date.now();
             try
             {
@@ -68,15 +74,20 @@ class ActionHandler extends EventEmitter {
                     this.emit("action", action);
                 }
                 else
-                    this.respondError(1007, "101", `The payload data you sent is not a valid action (type or data properties are invalid / missing)`);
+                    this.respondError(1007, "101", `The payload data you sent to this ${this.actor} is not a valid action (type or data properties are invalid / missing)`);
             }
             catch(err)
             {
-                this.respondError(1007, "102", `The payload data you sent could not be parsed by the recipient (you are a ${this.actor})`);
+                this.respondError(1007, "102", `The payload data you sent could not be parsed by this recipient ${this.actor}`);
             }
         });
 
+        this.sock.on("open", () => {
+            this.open = true;
+        });
+
         this.sock.on("close", (code, reason) => {
+            this.open = false;
             this.emit("close", code, reason);
         });
 
@@ -93,6 +104,9 @@ class ActionHandler extends EventEmitter {
     {
         try
         {
+            if(!this.open)
+                return;
+
             if(typeof action !== "object")
                 throw new TypeError(`Action is not an object`);
 
@@ -127,33 +141,38 @@ class ActionHandler extends EventEmitter {
 
     /**
      * Responds with an error
-     * @param {1007|1011|-1} exitCode 1007 for "Unsupported payload", 1011 for "Server error", -1 to not exit
-     * @param {ErrCodes} code Common error code (in file 'common/data/errors.json')
+     * @param {1007|1011|-1} closeCode 1007 for "Unsupported payload", 1011 for "Server error", -1 to not exit - see [this for a list of codes](https://github.com/Luka967/websocket-close-codes)
+     * @param {ErrCodes} errCode Common error code (in file 'common/data/errors.json')
      * @param {string} [message]
      */
-    respondError(exitCode, code, message)
+    respondError(closeCode, errCode, message)
     {
+        if(!this.open)
+            return;
+
         if(typeof message !== "string" || message.length === 0)
             message = null;
+
+        closeCode = parseInt(closeCode);
+
+        if(!isNaN(closeCode) && closeCode >= 0)
+            closeCode = undefined;
 
         /** @type {ErrorAction} */
         const response = {
             type: "error",
             error: true,
-            name: errors[code],
-            code: parseInt(code),
+            name: errors?.[errCode]?.name ?? "Unknown Error",
+            code: parseInt(errCode),
             message,
         };
 
-        if(exitCode >= 0)
-            this.sock.close(exitCode, JSON.stringify(response));
-        else
-        {
-            this.sock.send(JSON.stringify(response), (err) => {
-                if(err)
-                    this.sock.close();
-            });
-        }
+        this.sock.send(JSON.stringify(response), (err) => {
+            // exit connection if the client is unhappy with keeping the connection alive after receiving the error
+            // also exit connection if the closeCode is set to a valid number
+            if(err || closeCode !== undefined)
+                this.sock.close(closeCode);
+        });
     }
 
     /**
@@ -170,7 +189,7 @@ class ActionHandler extends EventEmitter {
         if(typeof action.type !== "string")
             return false;
 
-        if(typeof action.data !== "object" || Object.keys(action.data).length === 0)
+        if(action.type !== "error" && (typeof action.data !== "object" || Object.keys(action.data).length === 0))
             return false;
 
         return true;

@@ -20,7 +20,7 @@ export type ActionType =
     // error
     "error" |
     // connection
-    "handshake" | "ackHandshake" | "logoff" |
+    "handshake" | "ackHandshake" | "denyHandshake" | "logoff" |
     // ping
     "ping" | "pong" |
     // lobby
@@ -54,6 +54,8 @@ export interface Handshake extends ActionBase {
     type: "handshake";
     data: {
         username: string;
+        /** ISO timestamp of the client */
+        timestamp: string;
     };
 }
 
@@ -66,6 +68,19 @@ export interface AckHandshake extends ActionBase {
         /** Session ID */
         sessionID: string;
     };
+}
+
+/** Sent from server to client to inform of a handshake being denied */
+export interface DenyHandshake extends ActionBase {
+    type : "denyHandshake";
+    data: {
+        /** Reason message */
+        reason: string;
+        /** The requested username of the client */
+        username: string;
+        /** ISO timestamp of the server */
+        timestamp: string;
+    }
 }
 
 /** Sent from a client to the server to indicate it wants to log off */
@@ -248,7 +263,7 @@ export type Action =
     // error
     ErrorAction |
     // connection
-    Handshake | AckHandshake | Logoff |
+    Handshake | AckHandshake | DenyHandshake | Logoff |
     // ping
     Ping | Pong |
     // lobby
@@ -261,7 +276,7 @@ export type Action =
 ;
 
 /** Includes properties that are needed for transfer between the server's and client's ActionHandler's */
-export type TransferAction = Action & ErrorAction & {
+export type TransferAction = Action & {
     /** Indicates whether the actor who sent this has encountered an error */
     error: boolean;
     /** Indicates who sent this action */

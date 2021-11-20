@@ -2,7 +2,7 @@
 node_modules/
 
 # log files
-errors.json
+error-log.json
 
 # environment variables
 .env
