@@ -4,11 +4,14 @@
   "description": "Command line multiplayer pong game",
   "license": "MIT",
   "main": "client/index.js",
-  "bin": "client/index.js",
+  "bin": {
+    "pung": "client/index.js",
+    "pung-server": "client/server.js"
+  },
   "scripts": {
     "test": "exit 0 # no test specified",
-    "start": "node client/index.js",
-    "start-server": "node server/index.js",
+    "start": "node client",
+    "server": "node server",
     "lint": "eslint ."
   },
   "keywords": [

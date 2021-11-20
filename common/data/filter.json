@@ -1,5 +1,6 @@
 {
-    "heads-up": "This is a list of restricted words, used to prevent usernames from containing slurs and stuff like that",
+    "disclaimer": "This is a list of restricted words, used to prevent usernames from containing slurs and stuff like that",
+
     "words": [
         "Spick",
         "Chink",
