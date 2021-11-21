@@ -1,10 +1,12 @@
 const { words } = require("./data/filter.json");
 
+const cfg = require("../config");
+
 
 /**
  * Replaces bad words in text with the set replacement
  * @param {string} text
- * @param {string} [replacement]
+ * @param {string} [replacement] Defaults to "***"
  * @returns {string}
  */
 function sanitizeText(text, replacement)
@@ -22,6 +24,25 @@ function sanitizeText(text, replacement)
     });
 
     return text;
+}
+
+/**
+ * Checks if a username is valid
+ * @param {string} username
+ * @returns {boolean}
+ */
+function usernameValid(username)
+{
+    if(typeof username !== "string")
+        return false;
+
+    if(username.length < 3 || username.length > 20)
+        return false;
+
+    if(!username.match(cfg.usernameRegex))
+        return false;
+
+    return true;
 }
 
 /**
@@ -43,3 +64,4 @@ function needsSanit(text)
 
 module.exports = sanitizeText;
 module.exports.needsSanit = needsSanit;
+module.exports.usernameValid = usernameValid;

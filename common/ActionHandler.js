@@ -42,19 +42,38 @@ class ActionHandler extends EventEmitter {
         /** @type {number} When the last message was received */
         this.lastMessageTimestamp = -1;
 
+        /** Connection timeout in ms */
+        this.timeout = 5000;
+
         // TODO: on interval, check lastDispatch, if > some amount of time, send a heartbeat request to the server
         // TODO: implement heartbeat system into server, to automatically clean up expired sessions
+        // TODO: on server, disconnect clients that have been connected for x amount of time
 
         this.hookEvents();
     }
 
     /**
-     * Closes the socket connection and cleans up the ActionHandler
+     * Closes the socket connection and cleans up the ActionHandler.  
+     * If the connection can't close, it is terminated by force.
+     * @returns {Promise<void>}
      */
     close()
     {
-        this.open = false;
-        this.sock.close();
+        return new Promise(res => {
+            this.open = false;
+
+            const to = setTimeout(() => {
+                this.sock.terminate();
+                return res();
+            }, this.timeout);
+
+            this.sock.on("close", () => {
+                clearTimeout(to);
+                return res();
+            });
+
+            this.sock.close();
+        });
     }
 
     hookEvents()

@@ -1,13 +1,14 @@
 const prompt = require("prompts");
 const { WebSocket } = require("ws");
-const { colors, isEmpty, pause } = require("svcorelib");
+const { colors, isEmpty, pause, unused } = require("svcorelib");
 const dotenv = require("dotenv");
 
 const ActionHandler = require("../common/ActionHandler");
 const dbg = require("../common/dbg");
+const settings = require("../common/settings");
+const { usernameValid } = require("../common/sanitizeText");
 
 const { startGame } = require("./game");
-const settings = require("../common/settings");
 
 const cfg = require("../config");
 
@@ -66,7 +67,7 @@ async function run()
         act.on("error", async (err) => {
             /** Call to close the connection */
             const closeConn = async () => {
-                act.close();
+                await act.close();
 
                 setTimeout(() => exit(1), 15000);
 
@@ -85,8 +86,7 @@ async function run()
             }
             else
             {
-                console.log(`${col.red}Error in ActionHandler:${col.rst}`);
-                err.address && console.log(`Can't connect to address '${err.address}'`);
+                console.log(`${col.red}Socket error in ActionHandler:${col.rst}`);
                 console.log(err instanceof Error ? err.stack : err ? err.toString() : "(Unknown Error)");
 
                 return closeConn();
@@ -233,25 +233,35 @@ async function mainMenu()
 function promptUsername(message)
 {
     return new Promise(async (res) => {
-        return res(await prompt({
+        const usr = await prompt({
             type: "text",
             message,
             validate: (v) => v.length > 2,
             name: "username",
-        }));
+        });
+
+        if(!usernameValid(usr))
+        {
+            console.log(`Your username is invalid. It has to be between 3 and 20 characters in length and can only contain a few special characters.\n`);
+
+            const { tryAgain } = await prompt({
+                type: "confirm",
+                name: "tryAgain",
+                message: "Try again?",
+                initial: true,
+            });
+
+            if(tryAgain)
+            {
+                clearConsole();
+                return res(await promptUsername());
+            }
+            else
+                exit(0);
+        }
+        else
+            return res(usr);
     });
-}
-
-function resetLobbyData()
-{
-    persistentData.lobbyID = undefined;
-    persistentData.lobbySettings = undefined;
-    persistentData.isLobbyAdmin = false;
-}
-
-function formatLobbyID(lobbyID)
-{
-    return `${lobbyID.substr(0, 3)} ${lobbyID.substr(3, 3)}`;
 }
 
 /**
@@ -270,6 +280,7 @@ async function displayLobby()
         return startGame(act, persistentData.sessionID, persistentData.lobbyID);
 
     const truncUser = (username, maxSpace) => {
+        // TODO:
         const spacesAmt = username.length - 10;
 
         let spaces = "";
@@ -293,7 +304,7 @@ async function displayLobby()
         `   • Difficulty:   ${persistentData.lobbySettings.difficulty}`,
         ``,
         `You:      ${col.green}${persistentData.username}${col.rst}${persistentData.isLobbyAdmin ? ` ${col.cyan}(Admin)${col.rst}` : ""}`,
-        `Opponent: ${col.yellow}TODO${col.rst}`,
+        `Opponent: ${col.yellow}TODO:${col.rst}`,
         ``,
     ];
 
@@ -481,14 +492,36 @@ async function leaveLobby()
 }
 
 /**
- * Clears the console
+ * Clears the console if debug mode is disabled, else inserts some blank lines and an indicator
  */
 function clearConsole()
 {
     if(!cfg.debugEnabled)
         console.clear();
     else
-        console.log("\n\n\n");
+        console.log("\n\n<clear>\n\n");
+}
+
+//#MARKER UI dependencies
+
+/**
+ * Resets all persistent lobby data
+ */
+function resetLobbyData()
+{
+    persistentData.lobbyID = undefined;
+    persistentData.lobbySettings = undefined;
+    persistentData.isLobbyAdmin = false;
+}
+
+/**
+ * Formats a shorthand form of the lobby ID to include a space in the middle for easier reading
+ * @param {string} lobbyID
+ * @returns {string}
+ */
+function formatLobbyID(lobbyID)
+{
+    return `${lobbyID.substr(0, 3)} ${lobbyID.substr(3, 3)}`;
 }
 
 //#MARKER server communication
@@ -588,5 +621,6 @@ async function incomingAction(action)
         break;
     }
 }
+
 
 run();

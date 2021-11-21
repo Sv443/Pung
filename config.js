@@ -15,6 +15,8 @@ const cfg = {
     maxTimestampDiff: 60000,
     /** Status page URL */
     statusURL: "https://status.sv443.net",
+    /** Regex that a valid username should match */
+    usernameRegex: /^[a-zA-Z0-9_\-./!?#*]$/,
 };
 
 module.exports = Object.freeze(cfg);

@@ -28,8 +28,6 @@ async function run()
     {
         await settings.init();
 
-        await init();
-
         const port = args.port ?? cfg.defaultServerPort;
 
         await server.init(port);
@@ -42,19 +40,6 @@ async function run()
 
         exit(1);
     }
-}
-
-function init()
-{
-    return new Promise(async (res, rej) => {
-        try
-        {
-            return res();
-        }
-        catch(err) {
-            return rej(err);
-        }
-    });
 }
 
 /**

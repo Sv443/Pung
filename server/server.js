@@ -10,6 +10,7 @@ const { generateSessID } = require("../common/sessionID");
 const cfg = require("../config");
 
 const col = colors.fg;
+const { usernameValid } = sanitizeText;
 
 
 /** @typedef {import("http").IncomingMessage} IncomingMessage */
@@ -112,6 +113,9 @@ function onClientAction(action, hand)
 
             if(Math.max(serverTS, clientTS) - Math.min(serverTS, clientTS) > cfg.maxTimestampDiff)
                 errReason = `Server and client system times vary by more than ${cfg.maxTimestampDiff} milliseconds (including connection latency)`;
+            
+            if(!usernameValid(data.username))
+                errReason = `Your username is invalid. It has to be between 3 and 20 characters in length and can only contain a few special characters.`;
 
             if(!errReason)
             {
