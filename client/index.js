@@ -297,10 +297,10 @@ function promptUsername()
  */
 function randomUsername()
 {
-    const buf = randomBytes(6);
-    const randIds = buf.map(byte => mapRange(parseInt(byte), 0, 255, 0, 9));
+    const buf = randomBytes(5);
+    const randIds = buf.map(byte => Math.round(mapRange(parseInt(byte), 0, 255, 0, 9)));
 
-    return `User_${randIds.join("")}`;
+    return `Player${randIds.join("")}`;
 }
 
 /**
