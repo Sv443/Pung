@@ -1,6 +1,7 @@
 const prompt = require("prompts");
 const { WebSocket } = require("ws");
-const { colors, isEmpty, pause, unused } = require("svcorelib");
+const { colors, isEmpty, pause, mapRange } = require("svcorelib");
+const { randomBytes } = require("crypto");
 const dotenv = require("dotenv");
 
 const ActionHandler = require("../common/ActionHandler");
@@ -96,7 +97,7 @@ async function run()
 
         clearConsole();
 
-        const { username } = await promptUsername("Please enter your username for this session");
+        const { username } = await promptUsername();
 
         const timestamp = new Date().toISOString();
 
@@ -190,7 +191,7 @@ async function mainMenu()
     }
     case "username":
     {
-        const { username } = await promptUsername("Enter your new username");
+        const { username } = await promptUsername();
 
         act.dispatch({
             type: "logoff",
@@ -227,41 +228,79 @@ async function mainMenu()
 
 /**
  * Prompts for a username
- * @param {string} message
  * @returns {Promise<string>}
  */
-function promptUsername(message)
+function promptUsername()
 {
     return new Promise(async (res) => {
-        const usr = await prompt({
-            type: "text",
-            message,
-            validate: (v) => v.length > 2,
-            name: "username",
-        });
-
-        if(!usernameValid(usr))
-        {
-            console.log(`Your username is invalid. It has to be between 3 and 20 characters in length and can only contain a few special characters.\n`);
-
-            const { tryAgain } = await prompt({
-                type: "confirm",
-                name: "tryAgain",
-                message: "Try again?",
-                initial: true,
+        const askUsername = async () => {
+            const usr = await prompt({
+                type: "text",
+                message: "Enter your desired username",
+                validate: (v) => v.length >= 3 && v.length <= 20,
+                name: "username",
             });
 
-            if(tryAgain)
+            if(!usernameValid(usr))
             {
-                clearConsole();
-                return res(await promptUsername());
+                console.log(`Your username is invalid. It has to be between 3 and 20 characters in length and can only contain a few special characters.\n`);
+
+                const { tryAgain } = await prompt({
+                    type: "confirm",
+                    name: "tryAgain",
+                    message: "Try again?",
+                    initial: true,
+                });
+
+                if(tryAgain)
+                {
+                    clearConsole();
+                    return res(await askUsername());
+                }
+                else
+                    exit(0);
             }
             else
-                exit(0);
+                return res(usr);
+        };
+
+        const { choice } = await prompt({
+            type: "select",
+            message: "Choose your username",
+            name: "choice",
+            choices: [
+                {
+                    title: "Enter your username",
+                    value: "enter",
+                    selected: true,
+                },
+                {
+                    title: "Randomly generate a username",
+                    value: "random",
+                }
+            ]
+        });
+
+        switch(choice)
+        {
+            case "enter":
+                return askUsername();
+            case "random":
+                return res(randomUsername());
         }
-        else
-            return res(usr);
     });
+}
+
+/**
+ * Generates a random username
+ * @returns {string}
+ */
+function randomUsername()
+{
+    const buf = randomBytes(6);
+    const randIds = buf.map(byte => mapRange(parseInt(byte), 0, 255, 0, 9));
+
+    return `User_${randIds.join("")}`;
 }
 
 /**
