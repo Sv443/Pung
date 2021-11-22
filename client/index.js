@@ -298,7 +298,7 @@ function promptUsername()
 function randomUsername()
 {
     const buf = randomBytes(5);
-    const randIds = buf.map(byte => Math.round(mapRange(parseInt(byte), 0, 255, 0, 9)));
+    const randIds = buf.map(byte => Math.round(mapRange(byte, 0, 255, 0, 9)));
 
     return `Player${randIds.join("")}`;
 }

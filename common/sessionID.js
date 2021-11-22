@@ -1,4 +1,5 @@
 const { randomUUID } = require("crypto");
+const { needsSanit } = require("./sanitizeText");
 
 
 /**
@@ -7,7 +8,13 @@ const { randomUUID } = require("crypto");
  */
 function generateSessID()
 {
-    return randomUUID({ disableEntropyCache: true });
+    const sessID = randomUUID({ disableEntropyCache: true });
+
+    // session ID contains slurs, recursively regenerate a new one until it doesn't
+    if(needsSanit(sessID))
+        return generateSessID();
+    else
+        return sessID;
 }
 
 /**
