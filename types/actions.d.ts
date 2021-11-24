@@ -224,14 +224,16 @@ export interface GameUpdate extends ActionBase {
 
 //#SECTION error
 
-/** This action is sent between any actors and is used to indicate an error */
+/** This action is sent between any two actors and is used to indicate an error */
 export interface ErrorAction {
     type: "error";
+    /** What action this error is responding to */
+    responseTo?: ActionType;
     /** Error code */
     code: ErrorCode;
     /** Name of the error */
     name: string;
-    message: string | null;
+    message?: string;
 }
 
 //#MARKER composite type
