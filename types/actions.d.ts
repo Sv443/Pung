@@ -88,6 +88,8 @@ export interface Logoff extends ActionBase {
     type: "logoff";
     data: {
         sessionID: string;
+        /** ISO format timestamp */
+        timestamp: string;
     };
 }
 

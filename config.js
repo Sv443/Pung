@@ -16,7 +16,7 @@ const cfg = {
     /** Status page URL */
     statusURL: "https://status.sv443.net",
     /** Regex that a valid username should match */
-    usernameRegex: /^[a-zA-Z0-9_\-./!?#*]$/,
+    usernameRegex: /^[a-zA-Z0-9_\-./!?#*]{3,20}$/,
 };
 
 module.exports = Object.freeze(cfg);

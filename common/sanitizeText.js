@@ -36,9 +36,6 @@ function usernameValid(username)
     if(typeof username !== "string")
         return false;
 
-    if(username.length < 3 || username.length > 20)
-        return false;
-
     if(!username.match(cfg.usernameRegex))
         return false;
 

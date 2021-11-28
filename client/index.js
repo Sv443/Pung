@@ -12,6 +12,7 @@ const { usernameValid } = require("../common/sanitizeText");
 const { startGame } = require("./game");
 
 const cfg = require("../config");
+const GameField = require("../common/GameField");
 
 const col = colors.fg;
 const { exit } = process;
@@ -19,12 +20,16 @@ const { exit } = process;
 
 /** @typedef {import("../types/actions").TransferAction} TransferAction */
 /** @typedef {import("../types/lobby").LobbySettings} LobbySettings */
+/** @typedef {import("../types/game").Player} Player */
+/** @typedef {import("../types/game").GameFieldSettings} GameFieldSettings */
 
 
 /** @type {WebSocket} */
 let sock;
 /** @type {ActionHandler} */
 let act;
+/** @type {GameField} */
+let field;
 
 
 const persistentData = {
@@ -97,7 +102,7 @@ async function run()
 
         clearConsole();
 
-        const { username } = await promptUsername();
+        const username = await promptUsername();
 
         const timestamp = new Date().toISOString();
 
@@ -109,7 +114,13 @@ async function run()
     }
     catch(err)
     {
-        console.error("error", err);
+        console.error(`\n${col.red}Client error:${col.rst}\n${err instanceof Error ? err.stack : err.toString()}\n`);
+
+        setTimeout(() => exit(1), 20000);
+
+        await pause("Press any key to exit (or wait 20s)…");
+
+        exit(1);
     }
 }
 
@@ -191,16 +202,18 @@ async function mainMenu()
     }
     case "username":
     {
-        const { username } = await promptUsername();
+        const username = await promptUsername();
+
+        const timestamp = new Date().toISOString();
 
         act.dispatch({
             type: "logoff",
-            data: { sessionID },
+            data: { sessionID, timestamp },
         });
 
         act.dispatch({
             type: "handshake",
-            data: { username },
+            data: { username, timestamp },
         });
 
         break;
@@ -233,17 +246,17 @@ async function mainMenu()
 function promptUsername()
 {
     return new Promise(async (res) => {
-        const askUsername = async () => {
-            const usr = await prompt({
+        const askUsername = () => new Promise(async (resUsr) => {
+            const { usr } = await prompt({
                 type: "text",
                 message: "Enter your desired username",
                 validate: (v) => v.length >= 3 && v.length <= 20,
-                name: "username",
+                name: "usr",
             });
 
             if(!usernameValid(usr))
             {
-                console.log(`Your username is invalid. It has to be between 3 and 20 characters in length and can only contain a few special characters.\n`);
+                console.log(`Your username is invalid. It has to be between 3 and 20 characters in length and can only contain these special characters: _\\-./!?#*\n`);
 
                 const { tryAgain } = await prompt({
                     type: "confirm",
@@ -255,14 +268,14 @@ function promptUsername()
                 if(tryAgain)
                 {
                     clearConsole();
-                    return res(await askUsername());
+                    return resUsr(await askUsername());
                 }
                 else
                     exit(0);
             }
             else
-                return res(usr);
-        };
+                return resUsr(usr);
+        });
 
         const { choice } = await prompt({
             type: "select",
@@ -284,7 +297,7 @@ function promptUsername()
         switch(choice)
         {
             case "enter":
-                return askUsername();
+                return res(await askUsername());
             case "random":
                 return res(randomUsername());
         }
@@ -609,7 +622,41 @@ async function incomingAction(action)
         persistentData.lobbySettings = data.initialSettings;
         persistentData.isLobbyAdmin = data.isAdmin;
 
-        displayLobby();
+        /** @type {Player[]} */
+        const fPlayers = [
+            {
+                sessionID: persistentData.sessionID,
+                isAdmin: persistentData.isLobbyAdmin,
+                pos: 5,
+                side: "l",
+            }
+        ];
+
+        /** @type {GameFieldSettings} */
+        const fSettings = {
+            outStream: process.stdout,
+            winScore: 3,
+        };
+
+        field = new GameField("client", fPlayers, fSettings);
+
+        await displayLobby();
+        break;
+    }
+    case "ackRemovedFromLobby":
+    {
+        /** @type {TransferAction} */
+        const { data } = action;
+
+        console.log("\nremoved from lobby. reason:", data.reason);
+
+        field = undefined;
+
+        persistentData.isLobbyAdmin = undefined;
+        persistentData.lobbyID = undefined;
+        persistentData.lobbyInGame = undefined;
+        persistentData.lobbySettings = undefined;
+
         break;
     }
     case "lobbyNotFound":
@@ -647,6 +694,8 @@ async function incomingAction(action)
     {
         /** @type {TransferAction} */
         const { data } = action;
+
+        field.updateGame(data);
 
         // TODO:
         break;

@@ -109,13 +109,13 @@ function onClientAction(action, hand)
             const serverTS = Date.now();
             const clientTS = new Date(timestamp).getTime();
 
-            let errReason = "Unknown reason";
+            let errReason;
 
             if(Math.max(serverTS, clientTS) - Math.min(serverTS, clientTS) > cfg.maxTimestampDiff)
                 errReason = `Server and client system times vary by more than ${cfg.maxTimestampDiff} milliseconds (including connection latency)`;
             
             if(!usernameValid(data.username))
-                errReason = `Your username is invalid. It has to be between 3 and 20 characters in length and can only contain a few special characters.`;
+                errReason = `Your username is invalid. It has to be between 3 and 20 characters in length and can only contain these special characters: _\\-./!?#*`;
 
             if(!errReason)
             {

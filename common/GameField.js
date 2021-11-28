@@ -45,10 +45,10 @@ class GameField extends EventEmitter {
      * Called when the server broadcasts an update to all clients
      * @param {GameUpdate} updateData
      */
-    updateGame(updateData)
+    updateGame({ lobbyID, players, ball })
     {
-        this.ballPos = updateData.ball.pos;
-        this.ballDir = updateData.ball.dir;
+        this.ballPos = ball.pos;
+        this.ballDir = ball.dir;
 
         this.frame = [["a", "b"], ["c", "d"]];
 
