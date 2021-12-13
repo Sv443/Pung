@@ -67,6 +67,11 @@ export interface AckHandshake extends ActionBase {
         finalUsername: string;
         /** Session ID */
         sessionID: string;
+        /**
+         * RNG seed nonce based on a hash of the session ID, to ensure consistency in randomness for the server and clients.  
+         * Ranges from `0` to `9 999 999 999 999 999` (16 nines), but is usually 16 digits and sometimes 15 long.
+         */
+        nonce: number;
     };
 }
 
@@ -257,12 +262,16 @@ export type Action =
     GameUpdate
 ;
 
-/** Includes properties that are needed for transfer between the server's and client's ActionHandler's */
-export type TransferAction = Action & {
+declare interface ActionDefaultProps {
+    /** Indicates what the data object will look like */
+    type: string;
     /** Indicates whether the actor who sent this has encountered an error */
     error: boolean;
     /** Indicates who sent this action */
     actor: Actor;
     /** Timestamp of when the action was sent, in the actor's system time */
     timestamp: number;
-};
+}
+
+/** Includes properties that are needed for transfer between the server's and client's ActionHandler's */
+export type TransferAction = ActionDefaultProps & Action;

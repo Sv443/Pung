@@ -97,7 +97,7 @@ class ActionHandler extends EventEmitter {
             }
             catch(err)
             {
-                this.respondError(1007, "102", `The payload data you sent could not be parsed by this recipient ${this.actor}`);
+                this.respondError(1007, "102", `The payload data you sent could not be parsed by this recipient ${this.actor}:\n${err.toString()}`);
             }
         });
 

@@ -25,6 +25,7 @@ const { exit } = process;
 
 /** @typedef {import("child_process").ChildProcess} ChildProcess */
 /** @typedef {import("../types/actions").TransferAction} TransferAction */
+/** @typedef {import("../types/actions").AckHandshake} AckHandshake */
 /** @typedef {import("../types/lobby").LobbySettings} LobbySettings */
 /** @typedef {import("../types/game").Player} Player */
 
@@ -42,6 +43,8 @@ const persistentData = {
     username: undefined,
     /** @type {string} */
     sessionID: undefined,
+    /** @type {number} */
+    nonce: undefined,
     /** @type {string} */
     lobbyID: undefined,
     /** @type {LobbySettings} */
@@ -60,7 +63,8 @@ async function run()
     try
     {
         /** #DEBUG */
-        const internal_server = true;
+        // const internal_server = true;
+        const internal_server = false;
 
         const clientSettings = await settings.init();
         
@@ -179,14 +183,15 @@ async function mainMenu()
     if(sock.readyState === 3)
         return run();
 
-    const { username, sessionID } = persistentData;
+    const { username, sessionID, nonce } = persistentData;
 
     clearConsole();
     console.log(`${col.blue}Pung - Main menu${col.rst}\n`);
 
-    console.log("#DEBUG");
-    console.log(`Username:  ${username}`);
-    console.log(`SessionID: ${sessionID}\n\n`);
+    console.log(`${col.yellow}#DEBUG${col.rst}`);
+    console.log(`Username:       ${username}`);
+    console.log(`SessionID:      ${sessionID}`);
+    console.log(`RNG seed nonce: ${nonce}\n\n`);
 
     const { option } = await prompt({
         type: "select",
@@ -336,7 +341,7 @@ function promptUsername()
                     selected: true,
                 },
                 {
-                    title: "Randomly generate a username",
+                    title: "Anonymous user",
                     value: "random",
                 }
             ]
@@ -640,11 +645,12 @@ async function incomingAction(action)
     {
     case "ackHandshake":
     {
-        /** @type {TransferAction} */
+        /** @type {AckHandshake} */
         const { data } = action;
 
         persistentData.username = data.finalUsername;
         persistentData.sessionID = data.sessionID;
+        persistentData.nonce = data.nonce;
 
         mainMenu();
         break;

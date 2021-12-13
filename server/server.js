@@ -1,5 +1,5 @@
 const { WebSocketServer } = require("ws");
-const { unused, colors } = require("svcorelib");
+const { unused, colors, mapRange } = require("svcorelib");
 
 const ActionHandler = require("../common/ActionHandler");
 const dbg = require("../common/dbg");
@@ -9,6 +9,7 @@ const { generateSessID } = require("../common/sessionID");
 const Lobby = require("../server/Lobby");
 
 const cfg = require("../config");
+const { createHash } = require("crypto");
 
 const col = colors.fg;
 const { usernameValid } = sanitizeText;
@@ -120,9 +121,27 @@ function onClientAction(action, hand)
 
             if(!errReason)
             {
+                /** Calculate random nonce number from a hash of the session ID (`seed`) */
+                const getNonce = (seed) => {
+                    const hash = createHash("sha512", { encoding: "hex" });
+                    hash.update(seed, "hex");
+
+                    const hexNonce = hash.digest("hex");
+
+                    const nonceBuf = Buffer.from(hexNonce, "hex");
+
+                    const nonceNums = nonceBuf.map(v => Math.round(mapRange(v, 0, 255, 0, 9)));
+
+                    const nonce = parseInt(nonceNums.slice(0, 16).join(""));
+
+                    return nonce;
+                };
+
+                const nonce = getNonce(sessionID.replace(/-/g, ""));
+
                 hand.dispatch({
                     type: "ackHandshake",
-                    data: { finalUsername, sessionID },
+                    data: { finalUsername, sessionID, nonce },
                 });
             }
             else
