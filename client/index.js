@@ -146,7 +146,7 @@ function spawnInternalServer()
 
         internalServer.on("spawn", () => {
             console.log("Internal server started");
-            return res();
+            setTimeout(() => res(), 1000); // artificial timeout - TODO:FIXME: ping server until it is up or something
         });
 
         internalServer.on("message", (msg, handle) => {
