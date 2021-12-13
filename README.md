@@ -20,7 +20,7 @@
 2. Clone or download (and unzip) the game to get the latest snapshot
 3. Open a terminal in the game's folder, where the `package.json` file is located
 4. Run `npm start` or `node client` to start the game normally
-    > Run `npm run server` or `node server` to start a server instance of the game
+    > Run `npm run server` or `node server` to start a dedicated server instance
 
 <br><br>
 
