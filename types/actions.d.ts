@@ -1,5 +1,6 @@
 import { LobbySettings, LobbyUser } from "./lobby";
 import { GameStartedData, GameUpdate as GameUpdateObj } from "./game";
+import { ErrCode } from "./errors";
 
 
 //#MARKER dependent types
@@ -237,7 +238,7 @@ export interface ErrorAction {
     /** What action this error is responding to */
     responseTo?: ActionType;
     /** Error code */
-    code: ErrorCode;
+    code: ErrCode;
     /** Name of the error */
     name: string;
     message?: string;

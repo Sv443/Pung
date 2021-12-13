@@ -13,7 +13,7 @@ export interface ServerSettings {
 }
 
 export interface Settings {
-    [key: Actor]: any;
+    [key: Actor]: ClientSettings | ServerSettings;
 
     client: ClientSettings;
     server: ServerSettings;

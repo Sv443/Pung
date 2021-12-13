@@ -5,7 +5,7 @@ export type Difficulty = "easy" | "medium" | "hard";
 export interface GameStartedData {
     /** Just to confirm */
     lobbyID: string;
-};
+}
 
 /** Describes a player who is currently in game */
 export interface Player {
@@ -46,9 +46,10 @@ export interface BallInfo {
 
 /** Contains information about a player */
 declare interface PlayerInfo extends Player {
-    isAdmin?: boolean;
-    pos?: Position;
-    side?: PlayerSide;
+    /** Position of the player's center cell along the vertical axis */
+    pos: number;
+    /** Which side of the horizontal field the player is on */
+    side: PlayerSide;
 }
 
 /**
