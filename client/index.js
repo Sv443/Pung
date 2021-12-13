@@ -336,7 +336,7 @@ function promptUsername()
             name: "choice",
             choices: [
                 {
-                    title: "Enter your username",
+                    title: "Enter username",
                     value: "enter",
                     selected: true,
                 },
