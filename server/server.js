@@ -94,7 +94,7 @@ function clientConnect(sock, req)
  */
 function onClientAction(action, hand)
 {
-    dbg("ClientAction", `Received action of type '${action.type}' from client, data: ${JSON.stringify(action.data)}`, "server");
+    dbg("IncomingAction", `Received action of type '${action.type}' from client, data: ${JSON.stringify(action.data)}`, "server");
 
     switch(action.type)
     {

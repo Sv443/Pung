@@ -117,7 +117,8 @@ async function run()
 
         const timestamp = new Date().toISOString();
 
-    
+
+        // TODO: handshake separately, whenever a lobby is joined or created
         act.dispatch({
             type: "handshake",
             data: { username, timestamp },
@@ -633,7 +634,7 @@ async function incomingAction(action)
 {
     const { type } = action;
 
-    dbg("ServerAction", `Received action of type '${type}' from server, data: ${JSON.stringify(action.data)}`, "client");
+    dbg("IncomingAction", `Received action of type '${type}' from server, data: ${JSON.stringify(action.data)}`, "client");
 
     switch(type)
     {
