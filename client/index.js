@@ -63,8 +63,8 @@ async function run()
     try
     {
         /** #DEBUG */
-        // const internal_server = true;
-        const internal_server = false;
+        const internal_server = true;
+        // const internal_server = false;
 
         const clientSettings = await settings.init();
         

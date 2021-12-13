@@ -19,11 +19,12 @@ let settings;
 /** @type {Settings} */
 const defaultSettings = Object.freeze({
     client: {
-        serverHost: "localhost", // TODO: change this to "sv443.net" once that's running
-        serverPort: cfg.defaultClientPort, // TODO: change this too maybe?
+        serverHost: "localhost",
+        serverPort: cfg.defaultClientPort,
     },
-    server: {
-
+    proxyServer: {
+        host: "pung.sv443.net", // TODO: get this proxy server running sometime in the future
+        port: cfg.defaultClientPort,
     },
 });
 
