@@ -2,10 +2,11 @@ const { WebSocketServer } = require("ws");
 const { unused, colors } = require("svcorelib");
 
 const ActionHandler = require("../common/ActionHandler");
-const Lobby = require("../common/Lobby");
 const dbg = require("../common/dbg");
 const sanitizeText = require("../common/sanitizeText");
 const { generateSessID } = require("../common/sessionID");
+
+const Lobby = require("../server/Lobby");
 
 const cfg = require("../config");
 

@@ -3,7 +3,7 @@ const cfg = require("../config");
 
 
 /** @typedef {import("../common/ActionHandler")} ActionHandler */
-/** @typedef {import("../common/Lobby")} Lobby */
+/** @typedef {import("../game/Lobby")} Lobby */
 /** @typedef {import("../types/game").GameStartedData} GameStartedData */
 /** @typedef {import("../types/actions").GameObj} GameObj */
 

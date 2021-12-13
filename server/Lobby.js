@@ -1,8 +1,8 @@
 const { mapRange } = require("svcorelib");
 const { randomBytes } = require("crypto");
 
-const { needsSanit } = require("./sanitizeText");
-const { isValidSessID } = require("./sessionID");
+const { needsSanit } = require("../common/sanitizeText");
+const { isValidSessID } = require("../common/sessionID");
 
 
 /** @typedef {import("../types/lobby").LobbySettings} LobbySettings */

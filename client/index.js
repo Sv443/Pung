@@ -1,35 +1,40 @@
+// packages
 const prompt = require("prompts");
 const { WebSocket } = require("ws");
 const { colors, isEmpty, pause, mapRange } = require("svcorelib");
 const { randomBytes } = require("crypto");
 const dotenv = require("dotenv");
 
+// common
 const ActionHandler = require("../common/ActionHandler");
 const dbg = require("../common/dbg");
 const settings = require("../common/settings");
 const { usernameValid } = require("../common/sanitizeText");
 
+// client
 const { startGame } = require("./game");
 
+// other
 const cfg = require("../config");
-const GameField = require("../common/GameField");
+const { fork } = require("child_process");
+const { join } = require("path");
 
 const col = colors.fg;
 const { exit } = process;
 
 
+/** @typedef {import("child_process").ChildProcess} ChildProcess */
 /** @typedef {import("../types/actions").TransferAction} TransferAction */
 /** @typedef {import("../types/lobby").LobbySettings} LobbySettings */
 /** @typedef {import("../types/game").Player} Player */
-/** @typedef {import("../types/game").GameFieldSettings} GameFieldSettings */
 
 
 /** @type {WebSocket} */
 let sock;
 /** @type {ActionHandler} */
 let act;
-/** @type {GameField} */
-let field;
+/** @type {ChildProcess} Undefined if no internal server is hosted, else set to a ChildProcess instance (all inter-process communication is done through websocket) */
+let internalServer;
 
 
 const persistentData = {
@@ -54,15 +59,21 @@ async function run()
 {
     try
     {
+        /** #DEBUG */
+        const internal_server = true;
+
         const clientSettings = await settings.init();
-
+        
         const useDefaultServer = typeof clientSettings.serverHost !== "string";
-
+        
         const defaultServer = "localhost"; // TODO: replace with "sv443.net" once that part is working
-
+        
         const host = useDefaultServer ? defaultServer : clientSettings.serverHost;
         const port = useDefaultServer ? cfg.defaultServerPort : clientSettings.serverPort;
-    
+
+        if(internal_server)
+            await spawnInternalServer();
+
         sock = new WebSocket(`ws://${host}:${port}`);
 
     
@@ -84,7 +95,7 @@ async function run()
 
             if(err?.code === "ECONNREFUSED")
             {
-                console.log(`\n\n${col.red}Can't connect to server at '${host}':${col.rst}\n`);
+                console.log(`\n\n${col.red}Can't connect to server at '${host}:${port}'${col.rst}\n`);
                 console.log(`To check the status of the default server, visit ${cfg.statusURL}`);
                 console.log(`If this issue persists, please delete the client settings file at '${settings.settingsPath}' to restore your settings to the defaults and try again\n`);
 
@@ -122,6 +133,42 @@ async function run()
 
         exit(1);
     }
+}
+
+function spawnInternalServer()
+{
+    return new Promise(async (res) => {
+        internalServer = fork("./index.js", {
+            env: process.env,
+            stdio: "inherit",
+            cwd: join(process.cwd(), "server"),
+        });
+
+        internalServer.on("spawn", () => {
+            console.log("Internal server started");
+            return res();
+        });
+
+        internalServer.on("message", (msg, handle) => {
+            console.log("Internal server message:", msg, "\nhandle:", handle);
+        });
+
+        internalServer.on("error", (err) => {
+            console.log("Internal server error:", err);
+        });
+
+        internalServer.on("disconnect", () => {
+            console.log("Internal server disconnected");
+        });
+
+        internalServer.on("exit", (code, sig) => {
+            console.log("Internal server exited - code:", code, "- signal:", sig);
+        });
+
+        internalServer.on("close", (code, sig) => {
+            console.log("Internal server closed - code:", code, "- signal:", sig);
+        });
+    });
 }
 
 //#MARKER menus
@@ -622,24 +669,6 @@ async function incomingAction(action)
         persistentData.lobbySettings = data.initialSettings;
         persistentData.isLobbyAdmin = data.isAdmin;
 
-        /** @type {Player[]} */
-        const fPlayers = [
-            {
-                sessionID: persistentData.sessionID,
-                isAdmin: persistentData.isLobbyAdmin,
-                pos: 5,
-                side: "l",
-            }
-        ];
-
-        /** @type {GameFieldSettings} */
-        const fSettings = {
-            outStream: process.stdout,
-            winScore: 3,
-        };
-
-        field = new GameField("client", fPlayers, fSettings);
-
         await displayLobby();
         break;
     }
@@ -649,8 +678,6 @@ async function incomingAction(action)
         const { data } = action;
 
         console.log("\nremoved from lobby. reason:", data.reason);
-
-        field = undefined;
 
         persistentData.isLobbyAdmin = undefined;
         persistentData.lobbyID = undefined;
@@ -694,8 +721,6 @@ async function incomingAction(action)
     {
         /** @type {TransferAction} */
         const { data } = action;
-
-        field.updateGame(data);
 
         // TODO:
         break;
