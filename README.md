@@ -25,12 +25,11 @@
 <br><br>
 
 ## Security
-- The default server encrypts traffic with HTTPS.  
-    Be aware I can't ensure security of user-hosted servers.
+- The default proxy server encrypts traffic with HTTPS.  
 - The only directly identifying information that is transmitted is your username.  
-    It will not be stored by the server, but it could potentially be stored by other users, so be aware of that.
-- All authentication (who is who & which player is the lobby's admin) is done through cryptographically securely generated unique session identifiers.  
-    If you feel like you were compromised, re-launching the game will give you a new username and session ID and you will be 100% anonymous again.
+    It will not be stored by the server, but it will be stored by other users, so be aware of that.
+- All authentication (who is who & which player is the lobby's admin) is done through cryptographically securely generated unique session IDs.  
+    If you feel like your connection is compromised, change your username in the menu or re-launch the game to regernerate the session ID.
 
 If you have any other questions or would like to report a security issue, please [refer to our security policy.](./.github/SECURITY.md#readme)
 
@@ -51,14 +50,12 @@ This section contains additional information about this project, in FAQ style:
 ### How?
 This project includes some [`client`](./client/), [`server`](./server/) and [`common`](./common/) / shared code.  
   
-When you launch this game normally, the client code is executed.  
-(When you launch the server by using `npm run server`, the server code is executed instead.)  
-  
-After you enter your username, the client contacts the server to initialize the session (this is internally called "handshake").  
+When you launch this game, the `index.js` file in the client folder is executed.  
+It prompts you to enter your username, after which the client contacts the server to initialize the session (this is internally called "handshake").  
 The server now generates a cryptographically secure session ID, sanitizes your username, and returns that data to your client.  
   
-Now your client has its session ID, which is used by the server to uniquely identify you without knowing anything about you.  
-This ID is also how the server knows who is the lobby admin.
+Now your client has its session ID, which is used by the server to uniquely identify clients and for example know who the lobby admin is.  
+Nothing uniquely identifying is saved on the server, it doesn't even know the usernames of the clients after the lobby was initially set up.  
 
 <br>
 
