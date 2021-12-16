@@ -1,6 +1,5 @@
 import { Actor } from "./actions";
 
-
 export interface ClientSettings {
     /** Host of the server */
     serverHost?: string;
@@ -8,13 +7,11 @@ export interface ClientSettings {
     serverPort: number;
 }
 
-export interface ServerSettings {
-
-}
+export interface ProxyServerSettings {}
 
 export interface Settings {
-    [key: Actor]: ClientSettings | ServerSettings;
+    [key: Actor]: ClientSettings | ProxyServerSettings;
 
     client: ClientSettings;
-    server: ServerSettings;
+    proxyServer: ProxyServerSettings;
 }

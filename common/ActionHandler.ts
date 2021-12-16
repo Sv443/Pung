@@ -1,8 +1,7 @@
-const { EventEmitter } = require("events");
-const { WebSocket } = require("ws");
+import { EventEmitter } from "events";
+import { WebSocket } from "ws";
 
-const errors = require("./data/errors.json");
-
+import errors from "./data/errors.json";
 
 /** @typedef {import("../types/actions").Action} Action */
 /** @typedef {import("../types/actions").TransferAction} TransferAction */
@@ -10,22 +9,24 @@ const errors = require("./data/errors.json");
 /** @typedef {import("../types/actions").ErrorAction} ErrorAction */
 /** @typedef {import("../types/errors").ErrCodes} ErrCodes */
 
-
-class ActionHandler extends EventEmitter {
+export default class ActionHandler extends EventEmitter {
     /**
      * Handles communication between server and clients
      * @param {Actor} actor
      * @param {WebSocket} sock
      */
-    constructor(actor, sock)
-    {
+    constructor(actor, sock) {
         super({ captureRejections: true });
 
-        if(![ "server", "client" ].includes(actor))
-            throw new TypeError(`Can't create ActionHandler, actor '${actor}' is invalid`);
+        if (!["server", "client"].includes(actor))
+            throw new TypeError(
+                `Can't create ActionHandler, actor '${actor}' is invalid`
+            );
 
-        if(!(sock instanceof WebSocket))
-            throw new TypeError(`Can't create ActionHandler, socket is not an instance of WebSocket`);
+        if (!(sock instanceof WebSocket))
+            throw new TypeError(
+                `Can't create ActionHandler, socket is not an instance of WebSocket`
+            );
 
         /** @type {Actor} */
         this.actor = actor;
@@ -53,13 +54,12 @@ class ActionHandler extends EventEmitter {
     }
 
     /**
-     * Closes the socket connection and cleans up the ActionHandler.  
+     * Closes the socket connection and cleans up the ActionHandler.
      * If the connection can't close, it is terminated by force.
      * @returns {Promise<void>}
      */
-    close()
-    {
-        return new Promise(res => {
+    close() {
+        return new Promise((res) => {
             this.open = false;
 
             const to = setTimeout(() => {
@@ -76,28 +76,32 @@ class ActionHandler extends EventEmitter {
         });
     }
 
-    hookEvents()
-    {
+    hookEvents() {
         this.sock.on("message", (chunk) => {
             this.open = true;
 
             this.lastMessageTimestamp = Date.now();
-            try
-            {
+            try {
                 /** @type {TransferAction} */
                 const action = JSON.parse(chunk.toString());
 
-                if(ActionHandler.isValidAction(action))
-                {
+                if (ActionHandler.isValidAction(action)) {
                     this.lastReceive = Date.now();
                     this.emit("action", action);
-                }
-                else
-                    this.respondError(1007, "101", `The payload data you sent to this ${this.actor} is not a valid action (type or data properties are invalid / missing)`);
-            }
-            catch(err)
-            {
-                this.respondError(1007, "102", `The payload data you sent could not be parsed by this recipient ${this.actor}:\n${err.toString()}`);
+                } else
+                    this.respondError(
+                        1007,
+                        "101",
+                        `The payload data you sent to this ${this.actor} is not a valid action (type or data properties are invalid / missing)`
+                    );
+            } catch (err) {
+                this.respondError(
+                    1007,
+                    "102",
+                    `The payload data you sent could not be parsed by this recipient ${
+                        this.actor
+                    }:\n${err.toString()}`
+                );
             }
         });
 
@@ -119,31 +123,31 @@ class ActionHandler extends EventEmitter {
      * Dispatches an action
      * @param {Action} action
      */
-    dispatch(action)
-    {
-        try
-        {
-            if(!this.open)
-                return;
+    dispatch(action) {
+        try {
+            if (!this.open) return;
 
-            if(typeof action !== "object")
+            if (typeof action !== "object")
                 throw new TypeError(`Action is not an object`);
 
             const { actor } = this;
             const { type, data } = action;
 
-            if(typeof type !== "string")
+            if (typeof type !== "string")
                 throw new TypeError(`Action type is invalid`);
 
-            if(typeof data !== "object")
+            if (typeof data !== "object")
                 throw new TypeError(`Action data is not a valid object`);
 
             const error = false;
 
             const timestamp = Date.now();
 
-            if(type === "pong")
-                data.internalLatency = Math.max(-1, Date.now() - this.lastMessageTimestamp);
+            if (type === "pong")
+                data.internalLatency = Math.max(
+                    -1,
+                    Date.now() - this.lastMessageTimestamp
+                );
 
             /** @type {TransferAction} */
             const transferAct = { error, type, actor, data, timestamp };
@@ -151,9 +155,7 @@ class ActionHandler extends EventEmitter {
             this.lastDispatch = timestamp;
 
             this.sock.send(JSON.stringify(transferAct));
-        }
-        catch(err)
-        {
+        } catch (err) {
             this.emit("error", err);
         }
     }
@@ -164,18 +166,14 @@ class ActionHandler extends EventEmitter {
      * @param {ErrCodes} errCode Common error code (in file 'common/data/errors.json')
      * @param {string} [message]
      */
-    respondError(closeCode, errCode, message)
-    {
-        if(!this.open)
-            return;
+    respondError(closeCode, errCode, message) {
+        if (!this.open) return;
 
-        if(typeof message !== "string" || message.length === 0)
-            message = null;
+        if (typeof message !== "string" || message.length === 0) message = null;
 
         closeCode = parseInt(closeCode);
 
-        if(!isNaN(closeCode) && closeCode >= 0)
-            closeCode = undefined;
+        if (!isNaN(closeCode) && closeCode >= 0) closeCode = undefined;
 
         /** @type {ErrorAction} */
         const response = {
@@ -189,8 +187,7 @@ class ActionHandler extends EventEmitter {
         this.sock.send(JSON.stringify(response), (err) => {
             // exit connection if the client is unhappy with keeping the connection alive after receiving the error
             // also exit connection if the closeCode is set to a valid number
-            if(err || closeCode !== undefined)
-                this.sock.close(closeCode);
+            if (err || closeCode !== undefined) this.sock.close(closeCode);
         });
     }
 
@@ -200,19 +197,18 @@ class ActionHandler extends EventEmitter {
      * @param {any} action
      * @returns {boolean}
      */
-    static isValidAction(action)
-    {
-        if(typeof action !== "object")
-            return false;
+    static isValidAction(action) {
+        if (typeof action !== "object") return false;
 
-        if(typeof action.type !== "string")
-            return false;
+        if (typeof action.type !== "string") return false;
 
-        if(action.type !== "error" && (typeof action.data !== "object" || Object.keys(action.data).length === 0))
+        if (
+            action.type !== "error" &&
+            (typeof action.data !== "object" ||
+                Object.keys(action.data).length === 0)
+        )
             return false;
 
         return true;
     }
 }
-
-module.exports = ActionHandler;

@@ -1,4 +1,4 @@
-const { join } = require("path");
+import { join } from "path";
 
 const cfg = {
     /** Target FPS of the game */
@@ -19,4 +19,4 @@ const cfg = {
     usernameRegex: /^[a-zA-Z0-9_\-./!?#*]{3,20}$/,
 };
 
-module.exports = Object.freeze(cfg);
+export default Object.freeze(cfg);

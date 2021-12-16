@@ -6,7 +6,8 @@
     },
     "extends": "eslint:recommended",
     "parserOptions": {
-        "ecmaVersion": 2021
+        "ecmaVersion": 2021,
+        "sourceType": "module"
     },
     "rules": {
         "linebreak-style": [
@@ -18,6 +19,10 @@
             "always"
         ],
         "no-unused-vars": "warn",
-        "no-async-promise-executor": "off"
+        "no-async-promise-executor": "off",
+        "brace-style": [
+            "error",
+            "allman"
+        ]
     }
 }

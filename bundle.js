@@ -1,3 +1,5 @@
+'use strict';
+
 // packages
 const prompt = require("prompts");
 const { WebSocket } = require("ws");
@@ -58,7 +60,7 @@ dotenv.config();
 
 //#MARKER entrypoint
 
-async function run()
+async function run$1()
 {
     try
     {
@@ -181,7 +183,7 @@ function spawnInternalServer()
 async function mainMenu()
 {
     if(sock.readyState === 3)
-        return run();
+        return run$1();
 
     const { username, sessionID, nonce } = persistentData;
 
@@ -401,7 +403,7 @@ async function displayLobby()
         `┌────────────────────┬──────────────────────────┐`,
         `│    ${col.blue}Pung - Lobby${col.rst}    │    Join Code: ${col.green}${formatLobbyID(persistentData.lobbyID)}${col.rst}    │`,
         `├────────────────────┴───┬──────────────────────┘`,
-        `│ You: ${col.green}${truncUser(persistentData.username, 16)}${col.rst} ${persistentData.isLobbyAdmin ? `${col.cyan} ♦${col.rst}` : "  "} │ ${col.yellow}${truncUser("TODO", 21)}${col.rst} ${persistentData.isLobbyAdmin ? "  " : `${col.cyan} ♦${col.rst}`} │`,
+        `│ You: ${col.green}${truncUser(persistentData.username)}${col.rst} ${persistentData.isLobbyAdmin ? `${col.cyan} ♦${col.rst}` : "  "} │ ${col.yellow}${truncUser("TODO")}${col.rst} ${persistentData.isLobbyAdmin ? "  " : `${col.cyan} ♦${col.rst}`} │`,
         ``,
         ``,
         `Settings:`,
@@ -464,11 +466,7 @@ async function displayLobby()
         return displayLobby();
     }, 1000);
 
-
-    // TODO:
-    const isAdmin = true;
-
-    lines.push(`${col.blue}Choose what to do:${col.rst} ${isAdmin ? `${col.yellow}[E]${col.rst}dit lobby settings • ` : ""}E${col.red}[x]${col.rst}it lobby `);
+    lines.push(`${col.blue}Choose what to do:${col.rst} ${`${col.yellow}[E]${col.rst}dit lobby settings • ` }E${col.red}[x]${col.rst}it lobby `);
 
 
     clearConsole();
@@ -717,8 +715,6 @@ async function incomingAction(action)
     }
     case "broadcastGameStarted":
     {
-        /** @type {TransferAction} */
-        const { data } = action;
 
         persistentData.lobbyInGame = true;
 
@@ -726,8 +722,6 @@ async function incomingAction(action)
     }
     case "broadcastGameUpdate":
     {
-        /** @type {TransferAction} */
-        const { data } = action;
 
         // TODO:
         break;
@@ -736,11 +730,14 @@ async function incomingAction(action)
         // TODO:
         console.log("Got error from server:", action);
         break;
-    default:
-
-        break;
     }
 }
 
+module.exports = { run: run$1 };
+
+async function run()
+{
+    await undefined();
+}
 
 run();
