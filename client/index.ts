@@ -10,7 +10,7 @@ import { join } from "path";
 // common
 import ActionHandler from "../common/ActionHandler";
 import dbg from "../common/dbg";
-import settings from "../common/settings";
+import * as settings from "../common/settings";
 import { usernameValid } from "../common/sanitizeText";
 
 // client
@@ -309,33 +309,42 @@ async function mainMenu() {
  * @returns {Promise<string>}
  */
 function promptUsername() {
-    return new Promise(async (res) => {
+    return new Promise<string>(async (res) => {
         const askUsername = () =>
-            new Promise(async (resUsr) => {
-                const { usr } = await prompt({
-                    type: "text",
-                    message: "Enter your desired username",
-                    validate: (v) => v.length >= 3 && v.length <= 20,
-                    name: "usr",
-                });
+            new Promise<string>(async (resUsr): Promise<string | undefined> => {
+                const usr = (
+                    await prompt({
+                        type: "text",
+                        message: "Enter your desired username",
+                        validate: (v) => v.length >= 3 && v.length <= 20,
+                        name: "usr",
+                    })
+                ).usr as string;
 
                 if (!usernameValid(usr)) {
                     console.log(
                         `Your username is invalid. It has to be between 3 and 20 characters in length and can only contain these special characters: _\\-./!?#*\n`
                     );
 
-                    const { tryAgain } = await prompt({
-                        type: "confirm",
-                        name: "tryAgain",
-                        message: "Try again?",
-                        initial: true,
-                    });
+                    const tryAgain = (
+                        await prompt({
+                            type: "confirm",
+                            name: "tryAgain",
+                            message: "Try again?",
+                            initial: true,
+                        })
+                    ).tryAgain as boolean;
 
                     if (tryAgain) {
                         clearConsole();
-                        return resUsr(await askUsername());
+                        const username = await askUsername();
+                        resUsr(username);
+                        return;
                     } else exit(0);
-                } else return resUsr(usr);
+                } else {
+                    resUsr(usr);
+                    return;
+                }
             });
 
         const { choice } = await prompt({
@@ -388,7 +397,7 @@ async function displayLobby() {
     if (persistentData.lobbyInGame)
         return startGame(act, persistentData.sessionID, persistentData.lobbyID);
 
-    const truncUser = (username, maxSpace) => {
+    const truncUser = (username: string, maxSpace: number) => {
         // TODO:
         const spacesAmt = username.length - 10;
 

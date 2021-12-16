@@ -10,8 +10,6 @@ export interface ClientSettings {
 export interface ProxyServerSettings {}
 
 export interface Settings {
-    [key: Actor]: ClientSettings | ProxyServerSettings;
-
     client: ClientSettings;
-    proxyServer: ProxyServerSettings;
+    server: ProxyServerSettings;
 }

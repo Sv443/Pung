@@ -1,19 +1,22 @@
 import { colors } from "svcorelib";
 
+import { Actor } from "../types/actions";
+
 import cfg from "../config";
+
+export type TextColor = "red" | "yellow" | "green" | "blue";
 
 const col = colors.fg;
 
-/** @typedef {import("../types/actions").Actor} Actor */
-
 /**
  * Logs a message to the console if enabled in the config
- * @param {string} section
- * @param {string} message
- * @param {Actor} [actor]
- * @param {"red"|"yellow"|"green"|"blue"} [color]
  */
-export default function dbg(section, message, actor, color = "blue") {
+export default function dbg(
+    section: string,
+    message: string,
+    actor: Actor,
+    color: TextColor = "blue"
+) {
     if (!cfg.debugEnabled) return;
 
     if (typeof section !== "string" || section.length === 0)

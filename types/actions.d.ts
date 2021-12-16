@@ -2,15 +2,13 @@ import { LobbySettings, LobbyUser } from "./lobby";
 import { GameStartedData, GameUpdate as GameUpdateObj } from "./game";
 import { ErrCode } from "./errors";
 
-
 //#MARKER dependent types
 
-
 /**
- * The action type indicates the format of the data sent between client and server  
- *   
- * Naming convention:  
- *   
+ * The action type indicates the format of the data sent between client and server
+ *
+ * Naming convention:
+ *
  * | Type | Actor |
  * | :-- | :-- |
  * | `ackFoo` | `server -> client` |
@@ -18,27 +16,34 @@ import { ErrCode } from "./errors";
  * | other | usually `client -> server` |
  */
 export type ActionType =
-    // error
-    "error" |
     // connection
-    "handshake" | "ackHandshake" | "denyHandshake" | "logoff" |
+    | "handshake"
+    | "ackHandshake"
+    | "denyHandshake"
+    | "logoff"
     // ping
-    "ping" | "pong" |
+    | "ping"
+    | "pong"
     // lobby
-    "createLobby" | "joinLobby" | "lobbyNotFound" | "ackJoinLobby" |
-    "changeLobbySettings" | "broadcastLobbyUpdate" |
-    "deleteLobby" | "ackRemovedFromLobby" |
-    "startGame" | "broadcastGameStarted" |
+    | "createLobby"
+    | "joinLobby"
+    | "lobbyNotFound"
+    | "ackJoinLobby"
+    | "changeLobbySettings"
+    | "broadcastLobbyUpdate"
+    | "deleteLobby"
+    | "ackRemovedFromLobby"
+    | "startGame"
+    | "broadcastGameStarted"
     // ingame
-    "broadcastGameUpdate"
-;
+    | "broadcastGameUpdate"
+    // error
+    | "error";
 
 /** Indicates who sent this action */
 declare type Actor = "client" | "server";
 
-
 //#MARKER actions
-
 
 /** Base interface for actions */
 declare interface ActionBase {
@@ -69,7 +74,7 @@ export interface AckHandshake extends ActionBase {
         /** Session ID */
         sessionID: string;
         /**
-         * RNG seed nonce based on a hash of the session ID, to ensure consistency in randomness for the server and clients.  
+         * RNG seed nonce based on a hash of the session ID, to ensure consistency in randomness for the server and clients.
          * Ranges from `0` to `9 999 999 999 999 999` (16 nines), but is usually 16 digits and sometimes 15 long.
          */
         nonce: number;
@@ -78,7 +83,7 @@ export interface AckHandshake extends ActionBase {
 
 /** Sent from server to client to inform of a handshake being denied */
 export interface DenyHandshake extends ActionBase {
-    type : "denyHandshake";
+    type: "denyHandshake";
     data: {
         /** Reason message */
         reason: string;
@@ -86,7 +91,7 @@ export interface DenyHandshake extends ActionBase {
         username: string;
         /** ISO timestamp of the server */
         timestamp: string;
-    }
+    };
 }
 
 /** Sent from a client to the server to indicate it wants to log off */
@@ -163,7 +168,7 @@ declare interface AckJoinLobby extends ActionBase {
         isAdmin: boolean;
         lobbyID: string;
         initialSettings: LobbySettings;
-    }
+    };
 }
 
 /** Sent from admin client to server to change lobby settings */
@@ -183,7 +188,7 @@ declare interface BroadcastLobbyUpdate extends ActionBase {
     data: {
         settings: LobbySettings;
         players: LobbyUser[];
-    }
+    };
 }
 
 /** Sent from admin client to server to request lobby deletion */
@@ -194,7 +199,7 @@ declare interface DeleteLobby extends ActionBase {
         lobbyID: string;
         /** Session ID of a lobby admin */
         sessionID: string;
-    }
+    };
 }
 
 /** Sent from server to client to inform about removal from lobby */
@@ -202,7 +207,7 @@ declare interface AckRemovedFromLobby extends ActionBase {
     type: "ackRemovedFromLobby";
     data: {
         reason: "adminLeft";
-    }
+    };
 }
 
 /** Sent from admin client to server to request the game to start */
@@ -213,7 +218,7 @@ declare interface StartGame extends ActionBase {
         lobbyID: string;
         /** The sessionID of the admin client */
         sessionID: string;
-    }
+    };
 }
 
 /** Sent from server to all clients in the lobby to inform about the game starting */
@@ -248,20 +253,29 @@ export interface ErrorAction {
 
 /** Any action of any type */
 export type Action =
-    // error
-    ErrorAction |
     // connection
-    Handshake | AckHandshake | DenyHandshake | Logoff |
+    | Handshake
+    | AckHandshake
+    | DenyHandshake
+    | Logoff
     // ping
-    Ping | Pong |
+    | Ping
+    | Pong
     // lobby
-    CreateLobby | JoinLobby | LobbyNotFound | AckJoinLobby |
-    ChangeLobbySettings | BroadcastLobbyUpdate |
-    DeleteLobby | AckRemovedFromLobby |
-    StartGame | BroadcastGameStarted |
+    | CreateLobby
+    | JoinLobby
+    | LobbyNotFound
+    | AckJoinLobby
+    | ChangeLobbySettings
+    | BroadcastLobbyUpdate
+    | DeleteLobby
+    | AckRemovedFromLobby
+    | StartGame
+    | BroadcastGameStarted
     // ingame
-    GameUpdate
-;
+    | GameUpdate
+    // error
+    | ErrorAction;
 
 declare interface ActionDefaultProps {
     /** Indicates what the data object will look like */

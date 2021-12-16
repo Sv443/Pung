@@ -1,21 +1,42 @@
 import { EventEmitter } from "events";
 import { WebSocket } from "ws";
 
+import { Action, Actor, TransferAction } from "../types/actions";
+import { ErrCode } from "../types/errors";
+
 import errors from "./data/errors.json";
 
 /** @typedef {import("../types/actions").Action} Action */
 /** @typedef {import("../types/actions").TransferAction} TransferAction */
 /** @typedef {import("../types/actions").Actor} Actor */
 /** @typedef {import("../types/actions").ErrorAction} ErrorAction */
-/** @typedef {import("../types/errors").ErrCodes} ErrCodes */
+
+/** Websocket close codes - 1007 for "Unsupported payload", 1011 for "Server error", -1 to not exit - see [this for a list of codes](https://github.com/Luka967/websocket-close-codes) */
+export type CloseCode = 1007 | 1011 | -1;
 
 export default class ActionHandler extends EventEmitter {
+    /** The actor identifier of this ActionHandler */
+    protected actor: Actor;
+    /** Socket connection to the other actor */
+    protected sock: WebSocket;
+
+    /** If the connection is open */
+    protected open = false;
+
+    /** When the last action was dispatched */
+    private lastDispatch = -1;
+    /** When the last valid action was received */
+    private lastReceive = -1;
+    /** When the last message was received */
+    private lastMessageTimestamp = -1;
+
+    /** Connection timeout in ms */
+    private timeout = 5000;
+
     /**
      * Handles communication between server and clients
-     * @param {Actor} actor
-     * @param {WebSocket} sock
      */
-    constructor(actor, sock) {
+    constructor(actor: Actor, sock: WebSocket) {
         super({ captureRejections: true });
 
         if (!["server", "client"].includes(actor))
@@ -28,23 +49,10 @@ export default class ActionHandler extends EventEmitter {
                 `Can't create ActionHandler, socket is not an instance of WebSocket`
             );
 
-        /** @type {Actor} */
         this.actor = actor;
-        /** @type {WebSocket} */
         this.sock = sock;
 
-        /** If the connection is open */
         this.open = false;
-
-        /** @type {number} When the last action was dispatched */
-        this.lastDispatch = -1;
-        /** @type {number} When the last valid action was received */
-        this.lastReceive = -1;
-        /** @type {number} When the last message was received */
-        this.lastMessageTimestamp = -1;
-
-        /** Connection timeout in ms */
-        this.timeout = 5000;
 
         // TODO: on interval, check lastDispatch, if > some amount of time, send a heartbeat request to the server
         // TODO: implement heartbeat system into server, to automatically clean up expired sessions
@@ -59,7 +67,7 @@ export default class ActionHandler extends EventEmitter {
      * @returns {Promise<void>}
      */
     close() {
-        return new Promise((res) => {
+        return new Promise<void>((res) => {
             this.open = false;
 
             const to = setTimeout(() => {
@@ -76,6 +84,9 @@ export default class ActionHandler extends EventEmitter {
         });
     }
 
+    /**
+     * Hook all events
+     */
     hookEvents() {
         this.sock.on("message", (chunk) => {
             this.open = true;
@@ -100,7 +111,7 @@ export default class ActionHandler extends EventEmitter {
                     "102",
                     `The payload data you sent could not be parsed by this recipient ${
                         this.actor
-                    }:\n${err.toString()}`
+                    }:\n${err as string}`
                 );
             }
         });
@@ -121,9 +132,8 @@ export default class ActionHandler extends EventEmitter {
 
     /**
      * Dispatches an action
-     * @param {Action} action
      */
-    dispatch(action) {
+    dispatch(action: Action) {
         try {
             if (!this.open) return;
 
@@ -131,26 +141,38 @@ export default class ActionHandler extends EventEmitter {
                 throw new TypeError(`Action is not an object`);
 
             const { actor } = this;
-            const { type, data } = action;
 
-            if (typeof type !== "string")
+            if (action.type === "error")
+                return this.emit(
+                    "error",
+                    new Error(
+                        `Received error in response to action '${action.responseTo}': ${action.code} - ${action.message}`
+                    )
+                );
+
+            if (typeof action.type !== "string")
                 throw new TypeError(`Action type is invalid`);
 
-            if (typeof data !== "object")
+            if (typeof action.data !== "object")
                 throw new TypeError(`Action data is not a valid object`);
 
             const error = false;
 
             const timestamp = Date.now();
 
-            if (type === "pong")
-                data.internalLatency = Math.max(
+            if (action.type === "pong")
+                action.data.internalLatency = Math.max(
                     -1,
                     Date.now() - this.lastMessageTimestamp
                 );
 
-            /** @type {TransferAction} */
-            const transferAct = { error, type, actor, data, timestamp };
+            const transferAct: TransferAction = {
+                error,
+                type: action.type,
+                actor,
+                data: action.data,
+                timestamp,
+            };
 
             this.lastDispatch = timestamp;
 
@@ -162,18 +184,17 @@ export default class ActionHandler extends EventEmitter {
 
     /**
      * Responds with an error
-     * @param {1007|1011|-1} closeCode 1007 for "Unsupported payload", 1011 for "Server error", -1 to not exit - see [this for a list of codes](https://github.com/Luka967/websocket-close-codes)
-     * @param {ErrCodes} errCode Common error code (in file 'common/data/errors.json')
-     * @param {string} [message]
+     * @param closeCode 1007 for "Unsupported payload", 1011 for "Server error", -1 to not exit - see [this for a list of codes](https://github.com/Luka967/websocket-close-codes)
+     * @param errCode Common error code (in file 'common/data/errors.json')
      */
-    respondError(closeCode, errCode, message) {
+    respondError(
+        closeCode: CloseCode | undefined,
+        errCode: ErrCode,
+        message: string | null
+    ) {
         if (!this.open) return;
 
         if (typeof message !== "string" || message.length === 0) message = null;
-
-        closeCode = parseInt(closeCode);
-
-        if (!isNaN(closeCode) && closeCode >= 0) closeCode = undefined;
 
         /** @type {ErrorAction} */
         const response = {
@@ -187,17 +208,15 @@ export default class ActionHandler extends EventEmitter {
         this.sock.send(JSON.stringify(response), (err) => {
             // exit connection if the client is unhappy with keeping the connection alive after receiving the error
             // also exit connection if the closeCode is set to a valid number
-            if (err || closeCode !== undefined) this.sock.close(closeCode);
+            if (err || closeCode !== undefined || closeCode !== -1)
+                this.sock.close(closeCode);
         });
     }
 
     /**
      * Checks if the provided value is a valid action
-     * @static
-     * @param {any} action
-     * @returns {boolean}
      */
-    static isValidAction(action) {
+    static isValidAction(action: any): boolean {
         if (typeof action !== "object") return false;
 
         if (typeof action.type !== "string") return false;

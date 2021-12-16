@@ -4,11 +4,13 @@ import cfg from "../config";
 
 /**
  * Replaces bad words in text with the set replacement
- * @param {string} text
- * @param {string} [replacement] Defaults to "***"
- * @returns {string}
+ * @param text
+ * @param replacement Defaults to "***"
  */
-export default function sanitizeText(text, replacement) {
+export default function sanitizeText(
+    text: string,
+    replacement: string = "***"
+): string {
     if (typeof text !== "string")
         throw new TypeError(
             `Can't sanitize value of type ${typeof text}, expected string instead`
@@ -26,12 +28,9 @@ export default function sanitizeText(text, replacement) {
 
 /**
  * Checks if a username is valid
- * @param {string} username
- * @returns {boolean}
+ * @param username
  */
-export function usernameValid(username) {
-    if (typeof username !== "string") return false;
-
+export function usernameValid(username: string): boolean {
     if (!username.match(cfg.usernameRegex)) return false;
 
     return true;
@@ -39,10 +38,8 @@ export function usernameValid(username) {
 
 /**
  * Checks if some text needs sanitization
- * @param {string} text
- * @returns {boolean}
  */
-export function needsSanit(text) {
+export function needsSanit(text: string): boolean {
     let needsSanit = false;
 
     words.forEach((word) => {
