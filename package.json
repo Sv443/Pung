@@ -12,6 +12,7 @@
     "test": "exit 0 # no test specified",
     "start": "node client",
     "server": "node server",
+    "proxy": "node proxy",
     "lint": "eslint ."
   },
   "keywords": [
