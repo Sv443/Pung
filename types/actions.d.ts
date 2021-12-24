@@ -40,20 +40,23 @@ declare type Actor = "client" | "server";
 //#MARKER actions
 
 
-/** Base interface for actions */
-declare interface ActionBase {
+/**
+ * Base interface for actions
+ * @template T The action's unique type / name
+ */
+declare interface ActionBase<T> {
     /** The action type indicates the format of the data sent between client and server */
-    type: ActionType;
+    type: T;
     /** The action payload data */
-    data: any;
+    data: Record<string, unknown>;
 }
 
 //#SECTION handshake
 
 /** Handshake is the first request, sent from client to server, to authorize and register with the server */
-export interface Handshake extends ActionBase {
-    type: "handshake";
+export interface Handshake extends ActionBase<"handshake"> {
     data: {
+        /** The username that the client wants to have */
         username: string;
         /** ISO timestamp of the client */
         timestamp: string;
@@ -61,24 +64,22 @@ export interface Handshake extends ActionBase {
 }
 
 /** This action is the response to a "handshake" action, sent from server to client */
-export interface AckHandshake extends ActionBase {
-    type: "ackHandshake";
+export interface AckHandshake extends ActionBase<"ackHandshake"> {
     data: {
-        /** The final username (after censoring slurs and shit like that) */
+        /** The final username (after censoring slurs and stuff like that) */
         finalUsername: string;
         /** Session ID */
         sessionID: string;
         /**
-         * RNG seed nonce based on a hash of the session ID, to ensure consistency in randomness for the server and clients.  
-         * Ranges from `0` to `9 999 999 999 999 999` (16 nines), but is usually 16 digits and sometimes 15 long.
+         * RNG seed nonce based on a hash of the session ID, to ensure consistency with seeded RNG for the server and clients (when dealing with any kind of randomness).  
+         * Theoretically ranges from `0` to `9 999 999 999 999 999` (16 nines), but is usually 16 digits and sometimes 15 long.
          */
         nonce: number;
     };
 }
 
 /** Sent from server to client to inform of a handshake being denied */
-export interface DenyHandshake extends ActionBase {
-    type : "denyHandshake";
+export interface DenyHandshake extends ActionBase<"denyHandshake"> {
     data: {
         /** Reason message */
         reason: string;
@@ -90,8 +91,7 @@ export interface DenyHandshake extends ActionBase {
 }
 
 /** Sent from a client to the server to indicate it wants to log off */
-export interface Logoff extends ActionBase {
-    type: "logoff";
+export interface Logoff extends ActionBase<"logoff"> {
     data: {
         sessionID: string;
         /** ISO format timestamp */
@@ -102,8 +102,7 @@ export interface Logoff extends ActionBase {
 //#SECTION ping
 
 /** Sent from client to server to ping */
-declare interface Ping extends ActionBase {
-    type: "ping";
+declare interface Ping extends ActionBase<"ping"> {
     data: {
         /** Timestamp of the client in [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) format */
         time: string;
@@ -111,8 +110,7 @@ declare interface Ping extends ActionBase {
 }
 
 /** Sent from server to client in response to a ping */
-declare interface Pong extends ActionBase {
-    type: "pong";
+declare interface Pong extends ActionBase<"pong"> {
     data: {
         /** Timestamp of the server in [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) format */
         serverTime: string;
@@ -128,8 +126,7 @@ declare interface Pong extends ActionBase {
 //#SECTION lobby
 
 /** Sent from client to server to create a lobby */
-declare interface CreateLobby extends ActionBase {
-    type: "createLobby";
+declare interface CreateLobby extends ActionBase<"createLobby"> {
     data: {
         /** Client username */
         username: string;
@@ -139,8 +136,7 @@ declare interface CreateLobby extends ActionBase {
 }
 
 /** Sent from client to server to ask to join a lobby */
-declare interface JoinLobby extends ActionBase {
-    type: "joinLobby";
+declare interface JoinLobby extends ActionBase<"joinLobby"> {
     data: {
         username: string;
         sessionID: string;
@@ -149,16 +145,14 @@ declare interface JoinLobby extends ActionBase {
 }
 
 /** Sent from server to client to tell the client */
-declare interface LobbyNotFound extends ActionBase {
-    type: "lobbyNotFound";
+declare interface LobbyNotFound extends ActionBase<"lobbyNotFound"> {
     data: {
         lobbyID: string;
     };
 }
 
 /** Sent from server to client to acknowledge joining a lobby */
-declare interface AckJoinLobby extends ActionBase {
-    type: "ackJoinLobby";
+declare interface AckJoinLobby extends ActionBase<"ackJoinLobby"> {
     data: {
         isAdmin: boolean;
         lobbyID: string;
@@ -167,8 +161,7 @@ declare interface AckJoinLobby extends ActionBase {
 }
 
 /** Sent from admin client to server to change lobby settings */
-declare interface ChangeLobbySettings extends ActionBase {
-    type: "changeLobbySettings";
+declare interface ChangeLobbySettings extends ActionBase<"changeLobbySettings"> {
     data: {
         /** Needed for authorizing the admin client */
         sessionID: string;
@@ -178,8 +171,7 @@ declare interface ChangeLobbySettings extends ActionBase {
 }
 
 /** Sent from server to all clients after lobby settings have been changed or user(s) have joined or left */
-declare interface BroadcastLobbyUpdate extends ActionBase {
-    type: "broadcastLobbyUpdate";
+declare interface BroadcastLobbyUpdate extends ActionBase<"broadcastLobbyUpdate"> {
     data: {
         settings: LobbySettings;
         players: LobbyUser[];
@@ -187,8 +179,7 @@ declare interface BroadcastLobbyUpdate extends ActionBase {
 }
 
 /** Sent from admin client to server to request lobby deletion */
-declare interface DeleteLobby extends ActionBase {
-    type: "deleteLobby";
+declare interface DeleteLobby extends ActionBase<"deleteLobby"> {
     data: {
         /** ID of the lobby to delete */
         lobbyID: string;
@@ -198,16 +189,14 @@ declare interface DeleteLobby extends ActionBase {
 }
 
 /** Sent from server to client to inform about removal from lobby */
-declare interface AckRemovedFromLobby extends ActionBase {
-    type: "ackRemovedFromLobby";
+declare interface AckRemovedFromLobby extends ActionBase<"ackRemovedFromLobby"> {
     data: {
         reason: "adminLeft";
     }
 }
 
 /** Sent from admin client to server to request the game to start */
-declare interface StartGame extends ActionBase {
-    type: "startGame";
+declare interface StartGame extends ActionBase<"startGame"> {
     data: {
         /** Which lobby to start */
         lobbyID: string;
@@ -217,16 +206,14 @@ declare interface StartGame extends ActionBase {
 }
 
 /** Sent from server to all clients in the lobby to inform about the game starting */
-declare interface BroadcastGameStarted extends ActionBase {
-    type: "broadcastGameStarted";
+declare interface BroadcastGameStarted extends ActionBase<"broadcastGameStarted"> {
     data: GameStartedData;
 }
 
 //#SECTION ingame
 
 /** This action sends game updates, from server to client */
-export interface GameUpdate extends ActionBase {
-    type: "broadcastGameUpdate";
+export interface GameUpdate extends ActionBase<"broadcastGameUpdate"> {
     data: GameUpdateObj;
 }
 
